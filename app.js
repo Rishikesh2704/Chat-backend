@@ -11,8 +11,7 @@ app.get('/', (req, res) => {
 })
 
 io.on('connection', (socket) => {
-    console.log('User Connected')
-    socket.broadcast.emit("connected")
+    socket.on('chat', (msg) => io.emit('chat',msg))
     socket.on('disconnect', () => socket.broadcast.emit('Disconnected'))
 })
 
