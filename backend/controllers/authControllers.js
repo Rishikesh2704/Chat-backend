@@ -1,40 +1,48 @@
-const {body, matchedResult, validationResult} = require('express-validator')
+import { body, matchedData, validationResult } from "express-validator";
+import bcrypt from "bcryptjs";
+import { user } from "../models/usermodel.js";
 
 const validateUser = [
-    body('email').trim()
-    .isEmpty().withMessage("Please enter an email")
+  body("email")
+    .trim()
+    .notEmpty().withMessage("Please Enter An Email")
     .isEmail().withMessage("Value should be an email"),
 
-    body('password').trim()
-    .isEmpty().withMessage('Please enter password')
-    .isLength({min:8}).withMessage('Password should be atleast 8 characters long')
-    .isAlphanumeric().withMessage('Password must be Alphanumeric')
-]
+  body("password")
+    .trim()
+    .notEmpty().withMessage("Please Enter An Password")
+    .isLength({ min: 1, max: 10 }).withMessage("Password should be atleast 8 characters long"),
+];
 
-
-export const signinController = [
-    validateUser,
-    (req,res) => {
-        const error = validationResult(req)
-        if(!error.isEmpty()){
-            res.status(404).send(error.array())
-        }
-
-        const { email, password } = matchedResult(req)
-        console.log("email: ",email," password: ", password)
-        res.send("email: ",email, " password: ", password)
+export const signUpController = [
+  validateUser,
+  async (req, res) => {
+    const errors = validationResult(req);
+    
+    if (!errors.isEmpty()) {
+      console.log(req.body);
+      res.status(400).send(errors.array());
     }
-]
+
+    const { email, password } = matchedData(req);
+    const salt = await bcrypt.genSalt(10)
+    const hashedPassword = await bcrypt.hash(password, salt)
+    await  user.create({email, hashedPassword})
+
+    console.log("email: ", email, " password: ", password);
+    res.send({ email: email, password: password });
+  },
+];
 
 export const loginContoller = [
-    validateUser,
-    (req, res) => {
-        const errors = validationResult(req)
-        if(!errors.isEmpty()){
-            res.status(404).send(errors.array())
-        }
-        const { email, password } = matchedResult(req)
-        console.log("email: ", email, " password: ", password)
-        res.send("email: ",email," password: ", password)
+  validateUser,
+  (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(400).send(errors.array());
     }
-]
+    const { email, password } = matchedResult(req);
+    console.log("email: ", email, " password: ", password);
+    res.send("email: ", email, " password: ", password);
+  },
+];

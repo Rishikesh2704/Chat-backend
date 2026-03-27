@@ -1,7 +1,8 @@
 import express from 'express'
 import http from 'http'
 import { Server } from 'socket.io'
-import { loginContoller, signinController } from './controllers/authControllers';
+import { signUpController } from './controllers/authControllers.js';
+import { connectDb } from './lib/db.js';
 
 
 const app = express();
@@ -9,12 +10,14 @@ const server = http.createServer(app)
 const io = new Server(server)
 const PORT = 3000;
 
+app.use(express.json({extended:false}))
+
 app.get('/', (req, res) => {
     res.sendFile(import.meta.dirname + '/index.html')
 })
 
-app.get('/signup', signinController)
-app.get('/login', loginContoller)
+app.post('/signup', signUpController)
+// app.get('/login', loginContoller)
 
 io.on('connection', (socket) => {
     socket.on('chat', (msg) => io.emit('chat',msg))
@@ -22,5 +25,6 @@ io.on('connection', (socket) => {
 })
 
 server.listen(PORT, () => {
+    connectDb()
     console.log("Listening at ",PORT)
 })
