@@ -2,7 +2,7 @@ import { body, matchedData, validationResult } from "express-validator";
 import bcrypt from "bcryptjs";
 import { user } from "../models/usermodel.js";
 import { createToken } from "../utils/createToken.js";
-import mongoose from "mongoose";
+import jwt from 'jsonwebtoken'
 
 const validateUser = [
   body("email")
@@ -25,42 +25,54 @@ export const signUpController = [
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log(req.body);
-      res.status(400).send(errors.array());
+      return res.status(400).send(errors.array());
     }
     try {
       const { email, password } = matchedData(req);
+      const existingUser = await user.findOne({ email: email });
+      if (existingUser) {
+        return res.status(400).send("<h1>User Already Exists!</h1>");
+      }
 
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
-      user.find().then((users) => {
-        users.forEach(async (user) => {
-          const matchPassword = await bcrypt.compare(password, user.password);
-          if (user.email === email && matchPassword) {
-            throw new Error("User Already Exists!");
-          }
-        });
-      });
-      
+
       const User = new user({ email, password: hashedPassword });
-      // User.save()
-      // createToken(User.id, res);
-      res.send("Done");
+      await User.save();
+      const token = await createToken(User.id);
+      return res.status(201).send({Token: token})
     } catch (err) {
-      res.send(`<h1>${err}</h1>`);
+      console.log(err);
     }
   },
 ];
 
 export const loginContoller = [
   validateUser,
-  (req, res) => {
+  async (req, res) => {
     const errors = validationResult(req);
+    var token = req.headers['authorization']
+    console.log(token)
     if (!errors.isEmpty()) {
-      res.status(400).send(errors.array());
+      return res.status(400).send(errors.array());
     }
-    const { email, password } = matchedResult(req);
-    console.log("email: ", email, " password: ", password);
-    res.send("email: ", email, " password: ", password);
+    
+    try {
+     
+      const { email, password } = matchedData(req);
+      const User = await user.findOne({email:email})
+      if(!User){
+        return res.status(400).send("User Doesn't Exist!")
+      }
+      const comparePassword = await bcrypt.compare(password, User.password)
+      if(!comparePassword){
+        return res.send("Wrong Password!")
+      }
+      
+      return res.status(200).send("Logged In!")
+
+    } catch (error) {
+      console.log(error);
+    }
   },
 ];
