@@ -4,7 +4,7 @@ import { Server } from 'socket.io'
 import { signUpController } from './controllers/authControllers.js';
 import { connectDb } from './lib/db.js';
 import authRouter from './routers/auth.js';
-
+import cookies from 'cookie-parser';
 
 const app = express();
 const server = http.createServer(app)
@@ -12,6 +12,7 @@ const io = new Server(server)
 const PORT = 3000;
 
 app.use(express.json({extended:false}))
+app.use(cookies())
 
 app.get('/', (req, res) => {
     res.sendFile(import.meta.dirname + '/index.html')
