@@ -1,6 +1,6 @@
 import { body, matchedData, validationResult } from "express-validator";
 import bcrypt from "bcryptjs";
-import { user } from "../models/user.model.js";
+import { User } from "../models/user.model.js";
 import { createToken } from "../utils/createToken.js";
 import jwt from "jsonwebtoken";
 import cookies from "cookie-parser";
@@ -41,15 +41,15 @@ export const signUpController = [
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
 
-      const User = new user({
+      const NewUser = new User({
         email,
         username,
         password: hashedPassword,
         profile,
       });
-      await User.save();
-      const token = await createToken(User.id, res);
-      return res.status(201).send({ User });
+      await NewUser.save();
+      await createToken(NewUser.id, res);
+      return res.status(201).send({ NewUser });
     } catch (error) {
       res.status(500).send(error);
     }
