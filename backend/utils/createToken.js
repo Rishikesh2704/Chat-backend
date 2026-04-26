@@ -11,6 +11,6 @@ export const createToken = async (userId, res) => {
 
 
 export const refreshToken = async (userId, res) => {
-  const refreshToken = await jwt.sign({userId}, process.env.JWT_RefreshSecret,{expiresIN: '30d'})
+  const refreshToken = await jwt.sign({userId}, process.env.JWT_RefreshSecret,{expiresIn: '30d'})
   return refreshToken
 }

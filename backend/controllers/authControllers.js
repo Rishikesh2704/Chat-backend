@@ -19,7 +19,7 @@ const validateUser = [
     .trim()
     .notEmpty()
     .withMessage("Please Enter An Password")
-    .isLength({ min: 1, max: 10 })
+    .isLength({ min: 1})
     .withMessage("Password should be atleast 8 characters long"),
 ];
 
@@ -49,8 +49,8 @@ export const signUpController = [
       });
       await NewUser.save();
       const token = await createToken(NewUser.id, res);
-      const refreshToken = await refreshToken(NewUser.id, res)
-      return res.status(201).send({message:"User Created Successfully!", acessstoken:token, refreshToken});
+      const refToken = await refreshToken(NewUser.id, res)
+      return res.status(201).send({message:"User Created Successfully!", acesssToken:token, refreshToken:refToken});
     } catch (error) {
       console.log(error)
       res.status(500).send(error);
