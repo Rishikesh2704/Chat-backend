@@ -5,7 +5,7 @@ import { createToken, refreshToken } from "../utils/createToken.js";
 import jwt from "jsonwebtoken";
 import cookies from "cookie-parser";
 
-const validateUser = [
+const validateSignInUser = [
   body("email")
     .trim()
     .notEmpty()
@@ -19,12 +19,28 @@ const validateUser = [
     .trim()
     .notEmpty()
     .withMessage("Please Enter An Password")
-    .isLength({ min: 1})
+    .isLength({ min: 8})
     .withMessage("Password should be atleast 8 characters long"),
 ];
 
+const validateLogInUser = [
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("Please Enter An Email")
+    .isEmail()
+    .withMessage("Value should be an email"),
+
+  body("password")
+    .trim()
+    .notEmpty()
+    .withMessage("Please Enter An Password")
+    .isLength({ min: 8})
+    .withMessage("Incorrect Password "),
+];
+
 export const signUpController = [
-  validateUser,
+  validateSignInUser,
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -59,19 +75,20 @@ export const signUpController = [
 ];
 
 export const loginContoller = [
-  validateUser,
+  validateLogInUser,
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(404).send(errors.array());
+      console.log(errors)
+      return res.status(400).send(errors.array());
     }
 
     try {
       const { email, password } = matchedData(req);
       const User = await User.findOne({ email: email });
-
+      console.log(email, password)
       if (!User) {
-        return res.status(404).send("User Doesn't Exist!");
+        return res.status(404).json({message:"User Doesn't Exist!"});
       }
       const comparePassword = await bcrypt.compare(password, User.password);
       if (!comparePassword) {
