@@ -19,7 +19,7 @@ const validateSignInUser = [
     .trim()
     .notEmpty()
     .withMessage("Please Enter An Password")
-    .isLength({ min: 8})
+    .isLength({ min: 8 })
     .withMessage("Password should be atleast 8 characters long"),
 ];
 
@@ -35,7 +35,7 @@ const validateLogInUser = [
     .trim()
     .notEmpty()
     .withMessage("Please Enter An Password")
-    .isLength({ min: 8})
+    .isLength({ min: 8 })
     .withMessage("Incorrect Password "),
 ];
 
@@ -44,31 +44,38 @@ export const signUpController = [
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log(errors.array())
+      console.log(errors.array());
       return res.status(400).send(errors.array());
     }
     try {
       const { email, username, password, profile } = matchedData(req);
       const existingUser = await User.findOne({ email: email });
       if (existingUser) {
-        return res.status(400).json({message:'User Already Exists!'});
+        return res.status(400).json({ message: "User Already Exists!" });
       }
 
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
-
+      
       const NewUser = new User({
         email,
         username,
         password: hashedPassword,
         profile,
       });
+
       await NewUser.save();
       const token = await createToken(NewUser.id, res);
-      const refToken = await refreshToken(NewUser.id, res)
-      return res.status(201).send({message:"User Created Successfully!", acesssToken:token, refreshToken:refToken});
+      const refToken = await refreshToken(NewUser.id, res);
+      return res
+        .status(201)
+        .send({
+          message: "User Created Successfully!",
+          accessToken: token,
+          refreshToken: refToken,
+        });
     } catch (error) {
-      console.log(error)
+      console.log(error);
       res.status(500).send(error);
     }
   },
@@ -78,17 +85,19 @@ export const loginContoller = [
   validateLogInUser,
   async (req, res) => {
     const errors = validationResult(req);
+
     if (!errors.isEmpty()) {
-      console.log(errors)
+      console.log(errors);
       return res.status(400).send(errors.array());
     }
 
     try {
       const { email, password } = matchedData(req);
-      const User = await User.findOne({ email: email });
-      console.log(email, password)
+      console.log("Hello")
+      const User = await User.find({})
+      console.log(User)
       if (!User) {
-        return res.status(404).json({message:"User Doesn't Exist!"});
+        return res.status(404).json({ message: "User Doesn't Exist!" });
       }
       const comparePassword = await bcrypt.compare(password, User.password);
       if (!comparePassword) {
