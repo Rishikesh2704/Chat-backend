@@ -86,27 +86,27 @@ export const loginContoller = [
   async (req, res) => {
     const errors = validationResult(req);
 
-    if (!errors.isEmpty()) {
+    if(!errors.isEmpty()) {
       console.log(errors);
       return res.status(400).send(errors.array());
     }
 
     try {
       const { email, password } = matchedData(req);
-      console.log("Hello")
-      const User = await User.find({})
-      console.log(User)
-      if (!User) {
+      const user = await User.findOne({email:email})
+      console.log(user)
+      if (!user) {
         return res.status(404).json({ message: "User Doesn't Exist!" });
       }
-      const comparePassword = await bcrypt.compare(password, User.password);
+      const comparePassword = await bcrypt.compare(password, user.password);
       if (!comparePassword) {
         return res.status(401).send("Wrong Password!");
       }
-      await createToken(User.id, res);
+      await createToken(user.id, res);
       return res.status(200).send({ message: "Logged In!" });
     } catch (error) {
-      res.status(500).send(error);
+      console.log(error)
+      res.status(500).json({error});
     }
   },
 ];
