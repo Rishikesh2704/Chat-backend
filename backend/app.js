@@ -5,10 +5,12 @@ import cookies from 'cookie-parser';
 import messagesRouter from './routers/messages.js';
 import dotenv from 'dotenv'
 import cors from 'cors'
+import express from 'express'
 
 import {io, app, server } from './utils/socket.js'
 
 dotenv.config();
+const PORT = 3000
 
 const corsOptions = {
     origin:['http://localhost:5173'],

@@ -115,7 +115,8 @@ export const loginContoller = [
 
 export const logOutController = (req, res) => {
   try {
-    res.cookie("token", "");
+    res.cookie("accessToken", "");
+    res.cookie("refreshToken", "");
     res.status(200).send({ message: "Logged Out Successfully!" });
   } catch (error) {
     res.status(500).send(error);

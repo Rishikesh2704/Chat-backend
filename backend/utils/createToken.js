@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 export const createToken = async (userId, res) => {
-  const token = await jwt.sign({userId}, process.env.JWT_ACCESS_TOKEN_SECRET, {expiresIn:'15m'});
-  res.cookie('token', token, {
+  const token = await jwt.sign({userId}, process.env.JWT_ACCESS_TOKEN_SECRET, {expiresIn:'1m'});
+  res.cookie('accessToken', token, {
     maxAge: 1000 * 60 * 60 * 24,
     httpOnly:true,
     sameSite:"strict"
