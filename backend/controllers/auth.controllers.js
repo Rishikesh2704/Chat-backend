@@ -130,20 +130,21 @@ export const refreshTokenController = async(req, res) => {
    }
 
    try {
-      const decodedToken = jwt.verify(incomingRefreshToken, process.env.JWT_REFRESH_TOKEN_SECRET)
+    console.log()
+      const decodedToken =  jwt.verify(incomingRefreshToken, process.env.JWT_REFRESH_TOKEN_SECRET)
       if(!decodedToken){
         res.status(404).json({message:"Invalid Refresh token"})
       }
       const accessToken = await createToken(decodedToken.userID,res)
       const newRefreshToken = await refreshToken(decodedToken.userID,res)
-      res.status(200).json({
+      res.status(200).send({
         message:"Created New AccessToken",
         accessToken,
         refreshTOken:newRefreshToken,
       })
    } catch (error) {
       console.log(error)
-      res.status(500).json({message:"Internal Server Error"})
+      // res.status(500).send({message:"Internal Server Error"})
    }
    
 }

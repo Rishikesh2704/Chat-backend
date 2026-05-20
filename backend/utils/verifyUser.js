@@ -14,7 +14,7 @@ export const verifyUser = async(req, res, next) => {
         next()
     } catch (error) {
         console.log(error)
-        res.status(500).send({
+        res.status(401).send({
             message:"Unauthorized"
         })
     }
