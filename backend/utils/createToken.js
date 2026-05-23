@@ -11,6 +11,7 @@ export const createToken = async (userId, res) => {
 
 
 export const refreshToken = async (userId, res) => {
+  console.log('Creating New Refresh Token UserId is :', userId)
   const refreshToken = await jwt.sign({userId}, process.env.JWT_REFRESH_TOKEN_SECRET,{expiresIn: '30d'})
   res.cookie('refreshToken',refreshToken,{
     httpOnly:true,

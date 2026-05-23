@@ -103,6 +103,7 @@ export const loginContoller = [
         return res.status(401).send("Wrong Password!");
       }
       await createToken(user.id, res);
+      console.log(user.id)
       const refToken = await refreshToken(user.id, res);
 
       return res.status(200).send({ message: "Logged In!",refreshToken:refToken });
@@ -125,18 +126,22 @@ export const logOutController = (req, res) => {
 
 export const refreshTokenController = async(req, res) => {
    const incomingRefreshToken = req.cookies.refreshToken
+   console.log(req.cookies)
    if(!incomingRefreshToken){
     res.status(401).json({message:"Empty Refresh Token"})
    }
 
    try {
     console.log()
-      const decodedToken =  jwt.verify(incomingRefreshToken, process.env.JWT_REFRESH_TOKEN_SECRET)
+      const decodedToken = jwt.verify(incomingRefreshToken, process.env.JWT_REFRESH_TOKEN_SECRET)
       if(!decodedToken){
         res.status(404).json({message:"Invalid Refresh token"})
       }
-      const accessToken = await createToken(decodedToken.userID,res)
-      const newRefreshToken = await refreshToken(decodedToken.userID,res)
+      console.log("Decoded Token UserId :",decodedToken.userId)
+      const accessToken = await createToken(decodedToken.userId,res)
+      const newRefreshToken = await refreshToken(decodedToken.userId,res)
+      res.cookie('accessToken', accessToken)
+      res.cookie('refreshToken',  newRefreshToken)
       res.status(200).send({
         message:"Created New AccessToken",
         accessToken,
