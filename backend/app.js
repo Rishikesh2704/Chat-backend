@@ -24,7 +24,7 @@ app.use(express.json({extended:false}))
 app.use(cookies())
 
 app.get('/', (req, res) => {
-    res.sendFile(import.meta.dirname + '/index.html')
+    res.send({message:"Convo API"})
 })
 
 app.use('/auth/', authRouter)

@@ -137,7 +137,6 @@ export const refreshTokenController = async(req, res) => {
       if(!decodedToken){
         res.status(404).json({message:"Invalid Refresh token"})
       }
-      console.log("Decoded Token UserId :",decodedToken.userId)
       const accessToken = await createToken(decodedToken.userId,res)
       const newRefreshToken = await refreshToken(decodedToken.userId,res)
       res.cookie('accessToken', accessToken)
@@ -149,7 +148,7 @@ export const refreshTokenController = async(req, res) => {
       })
    } catch (error) {
       console.log(error)
-      // res.status(500).send({message:"Internal Server Error"})
+      res.status(500).send({message:"Internal Server Error"})
    }
    
 }

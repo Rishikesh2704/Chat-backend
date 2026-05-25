@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken'
 import { User } from '../models/user.model.js'
-export const verifyUser = async(req, res, next) => {
+export const verifyToken = async(req, res, next) => {
     try {
         var token = req.cookies.accessToken
         const isValid =  jwt.verify(token,process.env.JWT_ACCESS_TOKEN_SECRET)
