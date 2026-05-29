@@ -106,7 +106,7 @@ export const loginContoller = [
       console.log(user.id)
       const refToken = await refreshToken(user.id, res);
 
-      return res.status(200).send({ message: "Logged In!",refreshToken:refToken });
+      return res.status(200).send({ message: "Logged In!", User:user });
     } catch (error) {
       console.log(error)
       res.status(500).json({error});
