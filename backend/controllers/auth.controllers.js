@@ -56,7 +56,7 @@ export const signUpController = [
 
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
-      
+
       const NewUser = new User({
         email,
         username,
@@ -67,13 +67,11 @@ export const signUpController = [
       await NewUser.save();
       const token = await createToken(NewUser.id, res);
       const refToken = await refreshToken(NewUser.id, res);
-      return res
-        .status(201)
-        .send({
-          message: "User Created Successfully!",
-          accessToken: token,
-          refreshToken: refToken,
-        });
+      return res.status(201).send({
+        message: "User Created Successfully!",
+        accessToken: token,
+        refreshToken: refToken,
+      });
     } catch (error) {
       console.log(error);
       res.status(500).send(error);
@@ -86,15 +84,15 @@ export const loginContoller = [
   async (req, res) => {
     const errors = validationResult(req);
 
-    if(!errors.isEmpty()) {
+    if (!errors.isEmpty()) {
       console.log(errors);
       return res.status(400).send(errors.array());
     }
 
     try {
       const { email, password } = matchedData(req);
-      const user = await User.findOne({email:email})
-      console.log(user)
+      const user = await User.findOne({ email: email });
+      console.log("Login Controller: ", user);
       if (!user) {
         return res.status(404).json({ message: "User Doesn't Exist!" });
       }
@@ -102,14 +100,22 @@ export const loginContoller = [
       if (!comparePassword) {
         return res.status(401).send("Wrong Password!");
       }
+      console.log("Login Controller User: ", user);
       await createToken(user.id, res);
-      console.log(user.id)
+      console.log("LoginController", user.id);
       const refToken = await refreshToken(user.id, res);
 
-      return res.status(200).send({ message: "Logged In!", User:user });
+      return res.status(200).send({
+        message: "Logged In!",
+        User: {
+          id:user.id,
+          username:user.username,
+          profile:user.profile
+        },
+      });
     } catch (error) {
-      console.log(error)
-      res.status(500).json({error});
+      console.log(error);
+      res.status(500).json({ error });
     }
   },
 ];
@@ -124,31 +130,33 @@ export const logOutController = (req, res) => {
   }
 };
 
-export const refreshTokenController = async(req, res) => {
-   const incomingRefreshToken = req.cookies.refreshToken
-   console.log(req.cookies)
-   if(!incomingRefreshToken){
-    res.status(401).json({message:"Empty Refresh Token"})
-   }
+export const refreshTokenController = async (req, res) => {
+  const incomingRefreshToken = req.cookies.refreshToken;
+  console.log(req.cookies);
+  if (!incomingRefreshToken) {
+    res.status(401).json({ message: "Empty Refresh Token" });
+  }
 
-   try {
-    console.log()
-      const decodedToken = jwt.verify(incomingRefreshToken, process.env.JWT_REFRESH_TOKEN_SECRET)
-      if(!decodedToken){
-        res.status(404).json({message:"Invalid Refresh token"})
-      }
-      const accessToken = await createToken(decodedToken.userId,res)
-      const newRefreshToken = await refreshToken(decodedToken.userId,res)
-      res.cookie('accessToken', accessToken)
-      res.cookie('refreshToken',  newRefreshToken)
-      res.status(200).send({
-        message:"Created New AccessToken",
-        accessToken,
-        refreshTOken:newRefreshToken,
-      })
-   } catch (error) {
-      console.log(error)
-      res.status(500).send({message:"Internal Server Error"})
-   }
-   
-}
+  try {
+    console.log();
+    const decodedToken = jwt.verify(
+      incomingRefreshToken,
+      process.env.JWT_REFRESH_TOKEN_SECRET,
+    );
+    if (!decodedToken) {
+      res.status(404).json({ message: "Invalid Refresh token" });
+    }
+    const accessToken = await createToken(decodedToken.userId, res);
+    const newRefreshToken = await refreshToken(decodedToken.userId, res);
+    res.cookie("accessToken", accessToken);
+    res.cookie("refreshToken", newRefreshToken);
+    res.status(200).send({
+      message: "Created New AccessToken",
+      accessToken,
+      refreshTOken: newRefreshToken,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "Internal Server Error" });
+  }
+};

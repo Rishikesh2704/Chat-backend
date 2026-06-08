@@ -1,10 +1,11 @@
 import { messageModel } from "../models/messages.model.js";
 import { User } from "../models/user.model.js";
+import { io } from "../utils/socket.js";
 
 export const getUsersController = async (req, res) => {
   try {
     const { id } = req.user;
-    const users = await User.find({ _id: { $ne:id} }).select("-password");
+    const users = await User.find({ _id: { $ne: id } }).select("-password");
     res.status(200).send(users);
   } catch (error) {
     console.log(error);
@@ -48,6 +49,7 @@ export const sendMessagesController = async (req, res) => {
       text: message,
     });
     await newMessage.save();
+    io.to(ReceiverId).emit(newMessage)
     res.status(201).json({
       Message: "Successfully Sent Message!",
     });
