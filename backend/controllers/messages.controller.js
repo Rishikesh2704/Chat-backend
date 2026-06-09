@@ -43,13 +43,18 @@ export const sendMessagesController = async (req, res) => {
     const { _id: SenderId } = req.user;
     const { userId: ReceiverId } = req.params;
     const { message } = req.body;
+    console.log('Message Controller','\nReceiverId: ',ReceiverId, '\nSenderId :', SenderId)
     const newMessage = new messageModel({
       SenderId,
       ReceiverId,
       text: message,
     });
-    await newMessage.save();
-    io.to(ReceiverId).emit(newMessage)
+    // await newMessage.save();
+    io.to(ReceiverId).emit('privateMessage',newMessage,(err) => {
+      console.log(err)
+      if(!err) console.log('message:Failed to send message')
+      else console.log("message received by the user")
+    })
     res.status(201).json({
       Message: "Successfully Sent Message!",
     });

@@ -98,7 +98,7 @@ export const loginContoller = [
       }
       const comparePassword = await bcrypt.compare(password, user.password);
       if (!comparePassword) {
-        return res.status(401).send("Wrong Password!");
+        return res.status(400).send("Wrong Password!");
       }
       console.log("Login Controller User: ", user);
       await createToken(user.id, res);
@@ -108,9 +108,9 @@ export const loginContoller = [
       return res.status(200).send({
         message: "Logged In!",
         User: {
-          id:user.id,
-          username:user.username,
-          profile:user.profile
+          id: user.id,
+          username: user.username,
+          profile: user.profile,
         },
       });
     } catch (error) {
@@ -132,13 +132,11 @@ export const logOutController = (req, res) => {
 
 export const refreshTokenController = async (req, res) => {
   const incomingRefreshToken = req.cookies.refreshToken;
-  console.log(req.cookies);
   if (!incomingRefreshToken) {
     res.status(401).json({ message: "Empty Refresh Token" });
   }
 
   try {
-    console.log();
     const decodedToken = jwt.verify(
       incomingRefreshToken,
       process.env.JWT_REFRESH_TOKEN_SECRET,
