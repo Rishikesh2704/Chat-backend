@@ -30,16 +30,13 @@ app.use("/auth/", authRouter);
 app.use("/messages", messagesRouter);
 let users = {};
 io.on("connection", (socket) => {
-  users[socket.handshake.query.userId] =socket.id;
-
-  socket.emit("getUsers", users);  
-
+  users[socket.handshake.query.userId] = socket.id;
+  io.emit("getUsers", users);
   console.log("Users List: ", users);
   socket.on("disconnect", () => {
     socket.broadcast.emit("Disconnected");
-    // const  filteredUserList = Object.entries(users).filter(([key,value]) => key !== socket.handshake.query.userId)
-    console.log('User List:', users)
-    
+    delete users[socket.handshake.query.userId];
+    console.log("User List:", users);
   });
 });
 
