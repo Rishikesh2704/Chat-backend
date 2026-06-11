@@ -42,10 +42,11 @@ export const sendMessagesController = async (req, res) => {
   try {
     const { _id: SenderId } = req.user;
     const { userId: ReceiverId } = req.params;
-    const { message } = req.body;
+    const { message, receiverSocketId } = req.body;
+    console.log("Receiver SocketId: ", receiverSocketId)
     console.log(
-      "Message Controller",
-      "\nReceiverId: ",
+      "Message Controller ",
+      "ReceiverId: ",
       ReceiverId,
       "\nSenderId :",
       SenderId,
@@ -58,7 +59,7 @@ export const sendMessagesController = async (req, res) => {
     // await newMessage.save();
     console.log(newMessage)
     await new Promise((resolve, reject) =>
-      io.to(ReceiverId).emit("privateMessage", newMessage, (ack) => {
+      io.to(receiverSocketId).emit("privateMessage", newMessage, (ack) => {
         console.log(ack);
         if (!ack) {
           reject(new Error("Failed to Sent Message!"));

@@ -30,7 +30,8 @@ app.use("/auth/", authRouter);
 app.use("/messages", messagesRouter);
 let users = {};
 io.on("connection", (socket) => {
-  users[socket.handshake.query.userId] = socket.id;
+    console.log(socket.handshake.query.userId)
+    users[socket.handshake.query.userId] = socket.id;
   io.emit("getUsers", users);
   console.log("Users List: ", users);
   socket.on("disconnect", () => {
