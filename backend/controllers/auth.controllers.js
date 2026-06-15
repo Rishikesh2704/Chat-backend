@@ -92,7 +92,6 @@ export const loginContoller = [
     try {
       const { email, password } = matchedData(req);
       const user = await User.findOne({ email: email });
-      console.log("Login Controller: ", user);
       if (!user) {
         return res.status(404).json({ message: "User Doesn't Exist!" });
       }
@@ -100,9 +99,7 @@ export const loginContoller = [
       if (!comparePassword) {
         return res.status(400).send("Wrong Password!");
       }
-      console.log("Login Controller User: ", user);
       await createToken(user.id, res);
-      console.log("LoginController", user.id);
       const refToken = await refreshToken(user.id, res);
 
       return res.status(200).send({
@@ -125,6 +122,7 @@ export const logOutController = (req, res) => {
     res.cookie("accessToken", "");
     res.cookie("refreshToken", "");
     res.status(200).send({ message: "Logged Out Successfully!" });
+
   } catch (error) {
     res.status(500).send(error);
   }

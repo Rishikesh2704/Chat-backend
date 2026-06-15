@@ -15,20 +15,17 @@ export const getUsersController = async (req, res) => {
   }
 };
 
-export const privateMessagesController = async (req, res) => {
+export const getMessagesController = async (req, res) => {
   try {
     const { _id: myId } = req.user;
     const { userId: MessageRecieverId } = req.params;
-    const previouseMessages = await messageModel.find({
+    const previousMessages = await messageModel.find({
       $or: [
-        { SenderId: myId, ReceiverID: MessageRecieverId },
-        { SenderId: MessageRecieverId, ReceiverID: myId },
+        { SenderId: myId, ReceiverId: MessageRecieverId },
+        { SenderId: MessageRecieverId, ReceiverId: myId },
       ],
-    });
-    res.status(200).json({
-      SenderId: myId,
-      ReceiverId: MessageRecieverId,
-    });
+    }).limit(20);
+    res.status(200).json({messages:previousMessages});
   } catch (error) {
     console.log(error);
     res.status(500).json({
@@ -43,31 +40,27 @@ export const sendMessagesController = async (req, res) => {
     const { _id: SenderId } = req.user;
     const { userId: ReceiverId } = req.params;
     const { message, receiverSocketId } = req.body;
-    console.log("Receiver SocketId: ", receiverSocketId)
-    console.log(
-      "Message Controller ",
-      "ReceiverId: ",
-      ReceiverId,
-      "\nSenderId :",
-      SenderId,
-    );
+    
     const newMessage = new messageModel({
       SenderId,
       ReceiverId,
       text: message,
     });
-    // await newMessage.save();
-    console.log(newMessage)
+    const message1 = await newMessage.save();
+    console.log('New Message: ', message1)
     await new Promise((resolve, reject) =>
-      io.to(receiverSocketId).emit("privateMessage", newMessage, (ack) => {
-        console.log(ack);
-        if (!ack) {
+      io.to(receiverSocketId).timeout(100).emit("privateMessage", newMessage, (err,responses) => {
+        if (err) {
           reject(new Error("Failed to Sent Message!"));
-        } else resolve();
+        } else {
+          console.log(responses)
+          resolve();
+        }
       }),
     );
     res.status(201).json({
       Message: "Successfully Sent Message!",
+      data:newMessage
     });
   } catch (error) {
     console.log("Throw Error:", error);

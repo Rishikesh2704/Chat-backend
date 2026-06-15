@@ -13,7 +13,7 @@ dotenv.config();
 const PORT = 3000;
 
 const corsOptions = {
-  origin: ["http://localhost:5173"],
+  origin: ["http://localhost:5174"],
   methods: ["GET", "POST"],
   credentials: true,
 };
@@ -30,15 +30,16 @@ app.use("/auth/", authRouter);
 app.use("/messages", messagesRouter);
 let users = {};
 io.on("connection", (socket) => {
-    console.log(socket.handshake.query.userId)
-    users[socket.handshake.query.userId] = socket.id;
-  io.emit("getUsers", users);
-  console.log("Users List: ", users);
-  socket.on("disconnect", () => {
-    socket.broadcast.emit("Disconnected");
+  
+ users[socket.handshake.query.userId] = socket.id;
+
+  io.emit("get_Online_Users", users);
+
+  socket.on('disconnect',() => {
     delete users[socket.handshake.query.userId];
-    console.log("User List:", users);
-  });
+    io.emit('Users_Online', users)
+  })
+
 });
 
 server.listen(PORT, () => {
