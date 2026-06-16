@@ -18,13 +18,13 @@ export const getUsersController = async (req, res) => {
 export const getMessagesController = async (req, res) => {
   try {
     const { _id: myId } = req.user;
-    const { userId: MessageRecieverId } = req.params;
+    const { userId: MessageRecieverId, skipDocuments } = req.params;
     const previousMessages = await messageModel.find({
       $or: [
         { SenderId: myId, ReceiverId: MessageRecieverId },
         { SenderId: MessageRecieverId, ReceiverId: myId },
       ],
-    }).limit(20);
+    }).sort({createdAt:-1}).limit(15).skip(skipDocuments);
     res.status(200).json({messages:previousMessages});
   } catch (error) {
     console.log(error);
@@ -46,8 +46,7 @@ export const sendMessagesController = async (req, res) => {
       ReceiverId,
       text: message,
     });
-    const message1 = await newMessage.save();
-    console.log('New Message: ', message1)
+    await newMessage.save();
     await new Promise((resolve, reject) =>
       io.to(receiverSocketId).timeout(100).emit("privateMessage", newMessage, (err,responses) => {
         if (err) {
@@ -70,3 +69,19 @@ export const sendMessagesController = async (req, res) => {
     });
   }
 };
+
+
+export const deleteMessageController = async (req, res) => {
+  try{
+    const { _id:userId } = req.user
+    const { messageId } = req.params
+    console.log("User Id: ", userId, "Message Id: ", messageId)
+    const deletedMessage = await messageModel.deleteOne({$and:[{SenderId:userId},{_id:messageId}]});
+    res.status(200).json({
+      message:deletedMessage
+    })
+  }catch(error){
+    console.log(error);
+    res.status(500).json({message:"Internal Server Error"})
+  }
+}
