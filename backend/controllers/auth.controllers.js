@@ -122,7 +122,6 @@ export const logOutController = (req, res) => {
     res.cookie("accessToken", "");
     res.cookie("refreshToken", "");
     res.status(200).send({ message: "Logged Out Successfully!" });
-
   } catch (error) {
     res.status(500).send(error);
   }
@@ -140,7 +139,7 @@ export const refreshTokenController = async (req, res) => {
       process.env.JWT_REFRESH_TOKEN_SECRET,
     );
     if (!decodedToken) {
-      res.status(404).json({ message: "Invalid Refresh token" });
+      throw new Error("Invalid Refresh token");
     }
     const accessToken = await createToken(decodedToken.userId, res);
     const newRefreshToken = await refreshToken(decodedToken.userId, res);
@@ -153,6 +152,6 @@ export const refreshTokenController = async (req, res) => {
     });
   } catch (error) {
     console.log(error);
-    res.status(500).send({ message: "Internal Server Error" });
+    res.status(500).send({ message: "Internal Server Error" } || error.message);
   }
 };

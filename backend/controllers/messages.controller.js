@@ -77,8 +77,9 @@ export const deleteMessageController = async (req, res) => {
     const { messageId } = req.params
     console.log("User Id: ", userId, "Message Id: ", messageId)
     const deletedMessage = await messageModel.deleteOne({$and:[{SenderId:userId},{_id:messageId}]});
+   
     res.status(200).json({
-      message:deletedMessage
+      message:deletedMessage,
     })
   }catch(error){
     console.log(error);
