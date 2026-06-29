@@ -1,6 +1,8 @@
+import multer from "multer";
 import { messageModel } from "../models/messages.model.js";
 import { User } from "../models/user.model.js";
 import { io } from "../utils/socket.js";
+
 
 export const getUsersController = async (req, res) => {
   try {
@@ -36,11 +38,11 @@ export const getMessagesController = async (req, res) => {
 };
 
 export const sendMessagesController = async (req, res) => {
+ 
   try {
     const { _id: SenderId } = req.user;
     const { userId: ReceiverId } = req.params;
     const { message, receiverSocketId } = req.body;
-    
     const newMessage = new messageModel({
       SenderId,
       ReceiverId,
