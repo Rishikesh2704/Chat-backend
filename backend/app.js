@@ -1,5 +1,5 @@
 import { METHODS } from "http";
-import { connectDb } from "./lib/db.js";
+import { connectDb } from "./utils/db.js";
 import authRouter from "./routers/auth.js";
 import cookies from "cookie-parser";
 import messagesRouter from "./routers/messages.js";

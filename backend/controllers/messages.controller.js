@@ -2,7 +2,13 @@ import multer from "multer";
 import { messageModel } from "../models/messages.model.js";
 import { User } from "../models/user.model.js";
 import { io } from "../utils/socket.js";
-
+import { readFile } from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
+import { uploadFile } from "../utils/cloudinary.js";
+import dotenv from "dotenv";
+import fs from "fs";
+dotenv.config();
 
 export const getUsersController = async (req, res) => {
   try {
@@ -21,47 +27,60 @@ export const getMessagesController = async (req, res) => {
   try {
     const { _id: myId } = req.user;
     const { userId: MessageRecieverId, skipDocuments } = req.params;
-    const previousMessages = await messageModel.find({
-      $or: [
-        { SenderId: myId, ReceiverId: MessageRecieverId },
-        { SenderId: MessageRecieverId, ReceiverId: myId },
-      ],
-    }).sort({createdAt:-1}).limit(15).skip(skipDocuments);
-    res.status(200).json({messages:previousMessages});
+    const previousMessages = await messageModel
+      .find({
+        $or: [
+          { SenderId: myId, ReceiverId: MessageRecieverId },
+          { SenderId: MessageRecieverId, ReceiverId: myId },
+        ],
+      })
+      .sort({ createdAt: -1 })
+      .limit(15)
+      .skip(skipDocuments);
+
+    res.status(200).json({ messages: previousMessages });
   } catch (error) {
     console.log(error);
     res.status(500).json({
-      Message: "Failed Retreive Messages!",
+      Message: "Failed to Retreive Messages!",
       error,
     });
   }
 };
 
 export const sendMessagesController = async (req, res) => {
- 
   try {
     const { _id: SenderId } = req.user;
     const { userId: ReceiverId } = req.params;
     const { message, receiverSocketId } = req.body;
+    let imageUrl;
+    if (req.file) {
+      const response = await uploadFile(req.file?.path);
+      imageUrl = response.secure_url;
+    }
     const newMessage = new messageModel({
       SenderId,
       ReceiverId,
       text: message,
+      image: imageUrl,
     });
     await newMessage.save();
     await new Promise((resolve, reject) =>
-      io.to(receiverSocketId).timeout(100).emit("privateMessage", newMessage, (err,responses) => {
-        if (err) {
-          reject(new Error("Failed to Sent Message!"));
-        } else {
-          console.log(responses)
-          resolve();
-        }
-      }),
+      io
+        .to(receiverSocketId)
+        .timeout(100)
+        .emit("privateMessage", newMessage, (err, responses) => {
+          if (err) {
+            reject(new Error("Failed to Sent Message!"));
+          } else {
+            console.log("Sent Message Acknowledgement: ", responses);
+            resolve();
+          }
+        }),
     );
     res.status(201).json({
       Message: "Successfully Sent Message!",
-      data:newMessage
+      data: newMessage,
     });
   } catch (error) {
     console.log("Throw Error:", error);
@@ -72,19 +91,20 @@ export const sendMessagesController = async (req, res) => {
   }
 };
 
-
 export const deleteMessageController = async (req, res) => {
-  try{
-    const { _id:userId } = req.user
-    const { messageId } = req.params
-    console.log("User Id: ", userId, "Message Id: ", messageId)
-    const deletedMessage = await messageModel.deleteOne({$and:[{SenderId:userId},{_id:messageId}]});
-   
+  try {
+    const { _id: userId } = req.user;
+    const { messageId } = req.params;
+    console.log("User Id: ", userId, "Message Id: ", messageId);
+    const deletedMessage = await messageModel.deleteOne({
+      $and: [{ SenderId: userId }, { _id: messageId }],
+    });
+
     res.status(200).json({
-      message:deletedMessage,
-    })
-  }catch(error){
+      message: deletedMessage,
+    });
+  } catch (error) {
     console.log(error);
-    res.status(500).json({message:"Internal Server Error"})
+    res.status(500).json({ message: "Internal Server Error" });
   }
-}
+};
