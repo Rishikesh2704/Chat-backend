@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import { createToken, refreshToken } from "../utils/createToken.js";
 import jwt from "jsonwebtoken";
 import cookies from "cookie-parser";
+import { uploadFile } from "../utils/cloudinary.js";
 
 const validateSignInUser = [
   body("email")
@@ -153,5 +154,26 @@ export const refreshTokenController = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).send({ message: "Internal Server Error" } || error.message);
+  }
+};
+
+export const uploadProfileController = async (req, res) => {
+  try {
+    const { userId } = req.user;
+    if (!req.file){ res.status(404).send({ message: "No Image Found!" });}
+    // const { secure_url: profileUrl } = await uploadFile(req.file.path);
+    const user = await User.findOne(
+      { id: userId },
+      
+    );
+    console.log("User in database", user);
+    res.status(201).send({message:"Updated Profile", user:{
+      id:user.id,
+      username:user.username,
+      profile:user.profile
+    }})
+  } catch (error) {
+    console.log("Error: ", error);
+    res.status(500).send({ message: "Internal Server Error!" });
   }
 };

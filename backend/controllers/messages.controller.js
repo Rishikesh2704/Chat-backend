@@ -5,7 +5,7 @@ import { io } from "../utils/socket.js";
 import { readFile } from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import { uploadFile } from "../utils/cloudinary.js";
+import { deleteUploadedfile, uploadFile } from "../utils/cloudinary.js";
 import dotenv from "dotenv";
 import fs from "fs";
 dotenv.config();
@@ -96,10 +96,15 @@ export const deleteMessageController = async (req, res) => {
     const { _id: userId } = req.user;
     const { messageId } = req.params;
     console.log("User Id: ", userId, "Message Id: ", messageId);
-    const deletedMessage = await messageModel.deleteOne({
+    const deletedMessage = await messageModel.findOneAndDelete({
       $and: [{ SenderId: userId }, { _id: messageId }],
     });
-
+    if(deletedMessage.image) {
+      const image = deletedMessage.image.split('/')
+      const length = image.length;
+      const publicId = image[length-1].split('.')[0]
+      const deletedFile  = await deleteUploadedfile(publicId)
+    }
     res.status(200).json({
       message: deletedMessage,
     });
@@ -108,3 +113,5 @@ export const deleteMessageController = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+
