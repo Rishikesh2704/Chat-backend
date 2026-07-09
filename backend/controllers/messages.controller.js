@@ -64,23 +64,24 @@ export const sendMessagesController = async (req, res) => {
       text: message,
       image: imageUrl,
     });
-    await newMessage.save();
-    await new Promise((resolve, reject) =>
+   const isMessageSent = await new Promise((resolve, reject) =>
       io
         .to(receiverSocketId)
         .timeout(100)
-        .emit("privateMessage", newMessage, (err, responses) => {
+        .emit("privateMessage", newMessage, (err, response) => {
           if (err) {
             reject(new Error("Failed to Sent Message!"));
+            console.log("Failed", err)
           } else {
-            console.log("Sent Message Acknowledgement: ", responses);
-            resolve();
+            
+            resolve( response.length>0?response:[false]);
           }
         }),
     );
+   
+    if(isMessageSent[0]) await newMessage.save();
     res.status(201).json({
-      Message: "Successfully Sent Message!",
-      data: newMessage,
+      newMessage,sentMessage:isMessageSent[0]
     });
   } catch (error) {
     console.log("Throw Error:", error);
@@ -99,11 +100,11 @@ export const deleteMessageController = async (req, res) => {
     const deletedMessage = await messageModel.findOneAndDelete({
       $and: [{ SenderId: userId }, { _id: messageId }],
     });
-    if(deletedMessage.image) {
-      const image = deletedMessage.image.split('/')
+    if (deletedMessage.image) {
+      const image = deletedMessage.image.split("/");
       const length = image.length;
-      const publicId = image[length-1].split('.')[0]
-      const deletedFile  = await deleteUploadedfile(publicId)
+      const publicId = image[length - 1].split(".")[0];
+      const deletedFile = await deleteUploadedfile(publicId);
     }
     res.status(200).json({
       message: deletedMessage,
@@ -113,5 +114,3 @@ export const deleteMessageController = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
-

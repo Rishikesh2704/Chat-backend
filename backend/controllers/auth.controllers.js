@@ -100,16 +100,12 @@ export const loginContoller = [
       if (!comparePassword) {
         return res.status(400).send("Wrong Password!");
       }
+      user['password'] = ''
       await createToken(user.id, res);
       const refToken = await refreshToken(user.id, res);
-
       return res.status(200).send({
         message: "Logged In!",
-        User: {
-          id: user.id,
-          username: user.username,
-          profile: user.profile,
-        },
+        User:user,
       });
     } catch (error) {
       console.log(error);
@@ -159,19 +155,20 @@ export const refreshTokenController = async (req, res) => {
 
 export const uploadProfileController = async (req, res) => {
   try {
-    const { userId } = req.user;
-    if (!req.file){ res.status(404).send({ message: "No Image Found!" });}
-    // const { secure_url: profileUrl } = await uploadFile(req.file.path);
-    const user = await User.findOne(
-      { id: userId },
-      
+    const { id: userId } = req.user;
+    console.log("user id", userId);
+    if (!req.file) {
+      res.status(404).send({ message: "No Image Found!" });
+    }
+    console.log("File:",req.file)
+    const { secure_url: profileUrl } = await uploadFile(req.file.path);
+    const user = await User.findOneAndUpdate(
+      { _id: userId },
+      { $set: { profile: profileUrl } },
+      { returnDocument: "after" },
     );
-    console.log("User in database", user);
-    res.status(201).send({message:"Updated Profile", user:{
-      id:user.id,
-      username:user.username,
-      profile:user.profile
-    }})
+    console.log("Updated Profile: ", user);
+    res.status(201).send({ message: "Updated Profile", user });
   } catch (error) {
     console.log("Error: ", error);
     res.status(500).send({ message: "Internal Server Error!" });

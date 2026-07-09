@@ -30,16 +30,14 @@ app.use("/auth/", authRouter);
 app.use("/messages", messagesRouter);
 let users = {};
 io.on("connection", (socket) => {
-  
- users[socket.handshake.query.userId] = socket.id;
+  users[socket.handshake.query.userId] = socket.id;
 
   io.emit("get_Online_Users", users);
 
-  socket.on('disconnect',() => {
+  socket.on("disconnect", () => {
     delete users[socket.handshake.query.userId];
-    io.emit('Users_Online', users)
-  })
-
+    io.emit("Users_Online", users);
+  });
 });
 
 server.listen(PORT, () => {
