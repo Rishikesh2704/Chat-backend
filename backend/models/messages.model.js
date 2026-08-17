@@ -23,6 +23,9 @@ const messagesSchema = new mongoose.Schema(
       type: String,
       default:""
     },
+    reactions:{
+      type:String,
+    }
     
   },
   {

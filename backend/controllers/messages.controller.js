@@ -62,15 +62,16 @@ export const sendMessagesController = async (req, res) => {
       SenderId,
       ReceiverId,
       text: message,
-      seen:false,
+      seen: false,
       image: imageUrl,
+      reactions:'',
     });
     const savedMessage = await newMessage.save();
-    console.log("Receiver SocketId: ", receiverSocketId)
+    console.log("Receiver SocketId: ", receiverSocketId);
     const isMessageSent = await new Promise((resolve, reject) =>
       io
         .to(receiverSocketId)
-        .timeout(100)
+        .timeout(500)
         .emit("privateMessage", savedMessage, (err, response) => {
           if (err) {
             reject(new Error("Failed to Sent Message!"));

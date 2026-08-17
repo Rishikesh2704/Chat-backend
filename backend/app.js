@@ -18,6 +18,7 @@ const corsOptions = {
     "http://localhost:5173",
     "http://localhost:5174",
     "http://localhost:5175",
+    "http://localhost:5182",
   ],
   methods: ["GET", "POST"],
   credentials: true,
@@ -34,36 +35,76 @@ app.get("/", (req, res) => {
 app.use("/auth/", authRouter);
 app.use("/messages", messagesRouter);
 let users = {};
+
 io.on("connection", (socket) => {
   users[socket.handshake.query.userId] = socket.id;
   io.emit("get_Online_Users", users);
 
+  console.log("Sockets: ", users);
   socket.on("Typing", (mess) => {
-    if (mess.id) io.to(mess.id).emit("Typing", mess);
+    if (mess.id) {
+      io.to(mess.id).emit("Typing", mess);
+    }
   });
 
   socket.on("Seen_Message", async (message) => {
     const senderId = message?.SenderId;
-    try {
-      console.log("Message Id: ", message);
-      const seen = await messageModel.findOneAndUpdate(
-        { _id: message._id },
-        { $set: { seen: true } },
-      );
-      const socketId = Object.entries(users).find(
-        ([key, value]) => key == senderId,
-      )[1];
-      io.to(socketId).emit("Seen_Message", seen);
-    } catch (error) {
-      console.log(error);
-    }
+    const socketId = Object.entries(users).find(
+      ([key, value]) => key == senderId,
+    );
 
-    if (senderId) {
+    if (socketId?.length > 0)
+      try {
+        const seen = await messageModel.findOneAndUpdate(
+          { _id: message._id },
+          { $set: { seen: true } },
+        );
+
+        io.to(socketId[1]).emit("Seen_Message", seen);
+      } catch (error) {
+        console.log(error);
+      }
+  });
+
+  socket.on("Reacted_To_Message", async (mess) => {
+    console.log("Reaction: ", mess);
+    
+    try {
+      const updatedMessage = await messageModel.findOneAndUpdate(
+        { _id: mess.messageId },
+        { $set: { reactions: mess.reaction } },
+        {new:true}
+      );
+      const ReceiversocketId = users[updatedMessage.ReceiverId]
+      const SendersocketId = users[updatedMessage.SenderId]
+      console.log('Updated Message: ', updatedMessage )
+      io.to([ReceiversocketId,SendersocketId]).emit('Reaction_Update',updatedMessage);
+    } catch (error) {
+      console.log("Reaction Error: ", error);
+    }
+  });
+  
+  socket.on("Delete_Reaction", async (mess) => {
+    console.log("Reaction: ", mess);
+    
+    try {
+      const updatedMessage = await messageModel.findOneAndUpdate(
+        { _id: mess.messageId },
+        { $set: { reactions: mess.reaction } },
+        {new:true}
+      );
+      const ReceiversocketId = users[updatedMessage.ReceiverId]
+      const SendersocketId = users[updatedMessage.SenderId]
+      console.log('Updated Message: ', updatedMessage )
+      io.to([ReceiversocketId,SendersocketId]).emit('Deleted_Reaction',updatedMessage);
+    } catch (error) {
+      console.log("Reaction Error: ", error);
     }
   });
 
   socket.on("disconnect", () => {
     delete users[socket.handshake.query.userId];
+    console.log("After Disconnected:", users);
     io.emit("Users_Online", users);
   });
 });

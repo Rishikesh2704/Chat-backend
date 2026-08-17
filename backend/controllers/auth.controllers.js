@@ -4,7 +4,7 @@ import { User } from "../models/user.model.js";
 import { createToken, refreshToken } from "../utils/createToken.js";
 import jwt from "jsonwebtoken";
 import cookies from "cookie-parser";
-import { uploadFile } from "../utils/cloudinary.js";
+import { deleteUploadedfile, uploadFile } from "../utils/cloudinary.js";
 
 const validateSignInUser = [
   body("email")
@@ -66,12 +66,12 @@ export const signUpController = [
       });
 
       await NewUser.save();
+      NewUser["password"] = "";
       const token = await createToken(NewUser.id, res);
       const refToken = await refreshToken(NewUser.id, res);
       return res.status(201).send({
         message: "User Created Successfully!",
-        accessToken: token,
-        refreshToken: refToken,
+        User: NewUser,
       });
     } catch (error) {
       console.log(error);
@@ -100,12 +100,12 @@ export const loginContoller = [
       if (!comparePassword) {
         return res.status(400).send("Wrong Password!");
       }
-      user['password'] = ''
+      user["password"] = "";
       await createToken(user.id, res);
       const refToken = await refreshToken(user.id, res);
       return res.status(200).send({
         message: "Logged In!",
-        User:user,
+        User: user,
       });
     } catch (error) {
       console.log(error);
@@ -156,11 +156,19 @@ export const refreshTokenController = async (req, res) => {
 export const uploadProfileController = async (req, res) => {
   try {
     const { id: userId } = req.user;
+    const { oldProfile} = req.body;
     console.log("user id", userId);
     if (!req.file) {
       res.status(404).send({ message: "No Image Found!" });
     }
-    console.log("File:",req.file)
+    if (oldProfile) {
+      const image = oldProfile.split("/");
+      const length = image.length;
+      const publicId = image[length - 1].split(".")[0];
+      const deletedFile = await deleteUploadedfile(publicId);
+    }
+    console.log("Old Profile:", oldProfile)
+    console.log("File:", req.file);
     const { secure_url: profileUrl } = await uploadFile(req.file.path);
     const user = await User.findOneAndUpdate(
       { _id: userId },
