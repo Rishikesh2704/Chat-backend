@@ -9,6 +9,7 @@ import authRouter from "./routers/auth.js";
 import { connectDb } from "./utils/db.js";
 import { io, app, server } from "./utils/socket.js";
 import { messageModel } from "./models/messages.model.js";
+import groupRouter from "./routers/group.js";
 
 dotenv.config();
 const PORT = 3000;
@@ -34,13 +35,13 @@ app.get("/", (req, res) => {
 
 app.use("/auth/", authRouter);
 app.use("/messages", messagesRouter);
+app.use("/group", groupRouter);
 let users = {};
 
 io.on("connection", (socket) => {
   users[socket.handshake.query.userId] = socket.id;
   io.emit("get_Online_Users", users);
 
-  console.log("Sockets: ", users);
   socket.on("Typing", (mess) => {
     if (mess.id) {
       io.to(mess.id).emit("Typing", mess);

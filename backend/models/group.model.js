@@ -1,15 +1,17 @@
 import mongoose from "mongoose";
-import { User } from "./user.model";
+import { User } from "./user.model.js";
 
 
-const groupModel = new mongoose.Schema({
+const groupSchema = new mongoose.Schema({
     GroupName:{
         type:String,
-        required:true
+        default:"Group",
+        required:true,
     },
     Admins:[{
         type:mongoose.Schema.ObjectId,
         required:true,
+        
     }],
     Members:[
         {
@@ -25,3 +27,5 @@ const groupModel = new mongoose.Schema({
 {
     timestamps:true,
 })
+
+export const groupModel = new mongoose.model("Group", groupSchema);
