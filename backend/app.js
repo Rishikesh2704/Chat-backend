@@ -10,6 +10,8 @@ import { connectDb } from "./utils/db.js";
 import { io, app, server } from "./utils/socket.js";
 import { messageModel } from "./models/messages.model.js";
 import groupRouter from "./routers/group.js";
+import { User } from "./models/user.model.js";
+import { groupModel } from "./models/group.model.js";
 
 dotenv.config();
 const PORT = 3000;
@@ -40,7 +42,8 @@ let users = {};
 
 io.on("connection", (socket) => {
   users[socket.handshake.query.userId] = socket.id;
-  io.emit("get_Online_Users", users);
+  io.emit("Online_Users", users);
+  
 
   socket.on("Typing", (mess) => {
     if (mess.id) {
@@ -68,36 +71,36 @@ io.on("connection", (socket) => {
   });
 
   socket.on("Reacted_To_Message", async (mess) => {
-    console.log("Reaction: ", mess);
-    
     try {
       const updatedMessage = await messageModel.findOneAndUpdate(
         { _id: mess.messageId },
         { $set: { reactions: mess.reaction } },
-        {new:true}
+        { new: true },
       );
-      const ReceiversocketId = users[updatedMessage.ReceiverId]
-      const SendersocketId = users[updatedMessage.SenderId]
-      console.log('Updated Message: ', updatedMessage )
-      io.to([ReceiversocketId,SendersocketId]).emit('Reaction_Update',updatedMessage);
+      const ReceiversocketId = users[updatedMessage.ReceiverId];
+      const SendersocketId = users[updatedMessage.SenderId];
+      io.to([ReceiversocketId, SendersocketId]).emit(
+        "Reaction_Update",
+        updatedMessage,
+      );
     } catch (error) {
       console.log("Reaction Error: ", error);
     }
   });
-  
+
   socket.on("Delete_Reaction", async (mess) => {
-    console.log("Reaction: ", mess);
-    
     try {
       const updatedMessage = await messageModel.findOneAndUpdate(
         { _id: mess.messageId },
         { $set: { reactions: mess.reaction } },
-        {new:true}
+        { new: true },
       );
-      const ReceiversocketId = users[updatedMessage.ReceiverId]
-      const SendersocketId = users[updatedMessage.SenderId]
-      console.log('Updated Message: ', updatedMessage )
-      io.to([ReceiversocketId,SendersocketId]).emit('Deleted_Reaction',updatedMessage);
+      const ReceiversocketId = users[updatedMessage.ReceiverId];
+      const SendersocketId = users[updatedMessage.SenderId];
+      io.to([ReceiversocketId, SendersocketId]).emit(
+        "Deleted_Reaction",
+        updatedMessage,
+      );
     } catch (error) {
       console.log("Reaction Error: ", error);
     }
@@ -106,7 +109,7 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     delete users[socket.handshake.query.userId];
     console.log("After Disconnected:", users);
-    io.emit("Users_Online", users);
+    io.emit("AfterDisconnection_Online_Users", users);
   });
 });
 

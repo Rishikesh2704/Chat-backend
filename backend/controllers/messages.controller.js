@@ -8,13 +8,26 @@ import { fileURLToPath } from "url";
 import { deleteUploadedfile, uploadFile } from "../utils/cloudinary.js";
 import dotenv from "dotenv";
 import fs from "fs";
+import { groupModel } from "../models/group.model.js";
 dotenv.config();
 
 export const getUsersController = async (req, res) => {
   try {
     const { id } = req.user;
-    const users = await User.find({ _id: { $ne: id } }).select("-password");
-    res.status(200).send(users);
+    const dist = await messageModel
+      .find({ ReceiverId: id })
+      .select("SenderId")
+      .distinct("SenderId");
+    const Results = await Promise.all(
+      dist.map((friend) => {
+        const fri = User.find({ _id: friend._id.toString() }).select("-password");
+        return fri;
+      }),
+    );
+    const Friends = [...Results[0]];
+
+    const Groups = await groupModel.find({ Members: id });
+    res.status(200).send({Friends, Groups});
   } catch (error) {
     console.log(error);
     res.status(500).json({
@@ -64,7 +77,7 @@ export const sendMessagesController = async (req, res) => {
       text: message,
       seen: false,
       image: imageUrl,
-      reactions:'',
+      reactions: "",
     });
     const savedMessage = await newMessage.save();
     console.log("Receiver SocketId: ", receiverSocketId);

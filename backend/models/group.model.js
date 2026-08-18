@@ -8,10 +8,13 @@ const groupSchema = new mongoose.Schema({
         default:"Group",
         required:true,
     },
+    Profile:{
+        type:String,
+        default:""
+    },
     Admins:[{
         type:mongoose.Schema.ObjectId,
         required:true,
-        
     }],
     Members:[
         {
