@@ -1,5 +1,8 @@
 import { groupModel } from "../models/group.model.js";
 import { randomUUID } from "crypto";
+import { groupMessageModel } from "../models/groupMessages.model.js";
+import { io } from "../utils/socket.js";
+import { User } from "../models/user.model.js";
 
 export const createGroupController = async (req, res) => {
   const { groupName, groupMembers, admin } = req.body;
@@ -13,10 +16,10 @@ export const createGroupController = async (req, res) => {
   );
   try {
     const group = new groupModel({
-      GroupName: groupName,
-      Members: [admin, ...groupMembers],
-      Admins: [admin],
-      RoomId: randomUUID(),
+      groupName: groupName,
+      members: [admin, ...groupMembers],
+      admins: [admin],
+      roomId: randomUUID(),
     });
     console.log(group);
     const done = await group.save();
@@ -64,10 +67,55 @@ export const removeMemberController = async (req, res) => {
     if (!group) {
       throw new Error("UnAuthorized");
     }
-    console.log("Group:", group);
     res.status(200).send({ message: "Added Group Member" });
   } catch (error) {
     console.log(error);
     res.status(500).send(error);
+  }
+};
+
+export const groupMessagesController = async (req, res) => {
+  const { groupId } = req.params;
+  if (!groupId) {
+    res.status(404).send("Invalid Request");
+    return;
+  }
+  try {
+    const { _id: senderId } = req.user;
+    const { message, room } = req.body;
+    let imageUrl;
+    if (req.file) {
+      const response = await uploadFile(req.file?.path);
+      imageUrl = response.secure_url;
+    }
+ 
+    const groupMessage = new groupMessageModel({
+      groupId,
+      SenderId: senderId,
+      text: message,
+      image: imageUrl,
+    });
+    const savedMessage = await groupMessage.save();
+
+    await savedMessage.populate("SenderId", " username profile");
+    await new Promise((resolve, reject) => {
+      io.to(room)
+        .timeout(500)
+        .emit("groupMessage", savedMessage, (error, response) => {
+          if (error) {
+            reject(new Error("Failed to send message"));
+            console.log("Failed: ", error);
+          }
+          console.log("IO : ", response);
+          resolve(response.length > 0 ? response : [false]);
+        });
+    });
+    res.status(201).json({
+      message: "Sent Message To Successfully",
+      newMessage: savedMessage,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send("Internal Server Error");
   }
 };

@@ -51,6 +51,10 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on('join_group', (room) => {
+    socket.join(room);
+  })
+
   socket.on("Seen_Message", async (message) => {
     const senderId = message?.SenderId;
     const socketId = Object.entries(users).find(

@@ -3,26 +3,26 @@ import { User } from "./user.model.js";
 
 
 const groupSchema = new mongoose.Schema({
-    GroupName:{
+    groupName:{
         type:String,
-        default:"Group",
+        default:'Group',
         required:true,
     },
-    Profile:{
+    profile:{
         type:String,
         default:""
     },
-    Admins:[{
+    admins:[{
         type:mongoose.Schema.ObjectId,
         required:true,
     }],
-    Members:[
+    members:[
         {
             type:mongoose.Schema.ObjectId,
             ref:'User'
         }
     ],
-    RoomId:{
+    roomId:{
         type:String,
         required:true
     }

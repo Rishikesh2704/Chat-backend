@@ -1,14 +1,12 @@
-import multer from "multer";
+import dotenv from "dotenv";
+import { deleteUploadedfile, uploadFile } from "../utils/cloudinary.js";
+
 import { messageModel } from "../models/messages.model.js";
 import { User } from "../models/user.model.js";
 import { io } from "../utils/socket.js";
-import { readFile } from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
-import { deleteUploadedfile, uploadFile } from "../utils/cloudinary.js";
-import dotenv from "dotenv";
-import fs from "fs";
 import { groupModel } from "../models/group.model.js";
+import { groupMessageModel } from "../models/groupMessages.model.js";
+
 dotenv.config();
 
 export const getUsersController = async (req, res) => {
@@ -20,14 +18,16 @@ export const getUsersController = async (req, res) => {
       .distinct("SenderId");
     const Results = await Promise.all(
       dist.map((friend) => {
-        const fri = User.find({ _id: friend._id.toString() }).select("-password");
+        const fri = User.find({ _id: friend._id.toString() }).select(
+          "-password",
+        );
         return fri;
       }),
     );
-    const Friends = [...Results[0]];
+    const Friends = [...(Results[0] || [])];
 
-    const Groups = await groupModel.find({ Members: id });
-    res.status(200).send({Friends, Groups});
+    const Groups = await groupModel.find({ members: id });
+    res.status(200).send({ Friends, Groups });
   } catch (error) {
     console.log(error);
     res.status(500).json({
@@ -39,19 +39,27 @@ export const getUsersController = async (req, res) => {
 export const getMessagesController = async (req, res) => {
   try {
     const { _id: myId } = req.user;
-    const { userId: MessageRecieverId, skipDocuments } = req.params;
+    const { userId: messageRecieverId, skipDocuments } = req.params;
+    const groupMessage = await groupMessageModel
+      .find({ groupId: messageRecieverId })
+      .sort({ createdAt: -1 })
+      .limit(15)
+      .populate("SenderId", "username profile")
+      .skip(skipDocuments);
+
     const previousMessages = await messageModel
       .find({
         $or: [
-          { SenderId: myId, ReceiverId: MessageRecieverId },
-          { SenderId: MessageRecieverId, ReceiverId: myId },
+          { SenderId: myId, ReceiverId: messageRecieverId },
+          { SenderId: messageRecieverId, ReceiverId: myId },
         ],
       })
       .sort({ createdAt: -1 })
       .limit(15)
       .skip(skipDocuments);
-
-    res.status(200).json({ messages: previousMessages });
+    res
+      .status(200)
+      .json({ messages: previousMessages, groupMessages: groupMessage });
   } catch (error) {
     console.log(error);
     res.status(500).json({
@@ -71,6 +79,7 @@ export const sendMessagesController = async (req, res) => {
       const response = await uploadFile(req.file?.path);
       imageUrl = response.secure_url;
     }
+
     const newMessage = new messageModel({
       SenderId,
       ReceiverId,
@@ -81,7 +90,7 @@ export const sendMessagesController = async (req, res) => {
     });
     const savedMessage = await newMessage.save();
     console.log("Receiver SocketId: ", receiverSocketId);
-    const isMessageSent = await new Promise((resolve, reject) =>
+    await new Promise((resolve, reject) =>
       io
         .to(receiverSocketId)
         .timeout(500)

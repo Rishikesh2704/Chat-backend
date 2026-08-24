@@ -18,6 +18,7 @@ const messagesSchema = new mongoose.Schema(
     },
     seen:{
       type:Boolean,
+      default:['']
     },
     image: {
       type: String,
