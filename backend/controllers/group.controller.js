@@ -106,7 +106,6 @@ export const groupMessagesController = async (req, res) => {
             reject(new Error("Failed to send message"));
             console.log("Failed: ", error);
           }
-          console.log("IO : ", response);
           resolve(response.length > 0 ? response : [false]);
         });
     });

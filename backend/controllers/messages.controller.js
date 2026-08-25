@@ -124,7 +124,7 @@ export const deleteMessageController = async (req, res) => {
     const deletedMessage = await messageModel.findOneAndDelete({
       $and: [{ SenderId: userId }, { _id: messageId }],
     });
-    if (deletedMessage.image) {
+    if (deletedMessage && deletedMessage.image) {
       const image = deletedMessage.image.split("/");
       const length = image.length;
       const publicId = image[length - 1].split(".")[0];

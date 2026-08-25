@@ -12,6 +12,7 @@ import { messageModel } from "./models/messages.model.js";
 import groupRouter from "./routers/group.js";
 import { User } from "./models/user.model.js";
 import { groupModel } from "./models/group.model.js";
+import { groupMessageModel } from "./models/groupMessages.model.js";
 
 dotenv.config();
 const PORT = 3000;
@@ -23,7 +24,7 @@ const corsOptions = {
     "http://localhost:5175",
     "http://localhost:5182",
   ],
-  methods: ["GET", "POST"],
+  methods: ["GET", "POST", "DELETE"],
   credentials: true,
 };
 
@@ -56,6 +57,7 @@ io.on("connection", (socket) => {
   })
 
   socket.on("Seen_Message", async (message) => {
+  
     const senderId = message?.SenderId;
     const socketId = Object.entries(users).find(
       ([key, value]) => key == senderId,
@@ -73,6 +75,18 @@ io.on("connection", (socket) => {
         console.log(error);
       }
   });
+
+  socket.on("groupMessage_Seen", async(message,seenUser,roomId) => {
+      try {
+          const updatedMessage = await groupMessageModel.findOneAndUpdate(
+            {_id: message._id},
+            {$addToSet:{seen: seenUser._id}}
+          )
+          io.to(roomId).emit("SeenBy_GroupMembers", updatedMessage)
+      } catch (error) {
+        console.log("Group Message Error: ", error)
+      };
+  })
 
   socket.on("Reacted_To_Message", async (mess) => {
     try {
