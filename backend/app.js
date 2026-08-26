@@ -77,6 +77,13 @@ io.on("connection", (socket) => {
   });
 
   socket.on("groupMessage_Seen", async(message,seenUser,roomId) => {
+    if(!message || !seenUser || !roomId){
+      console.log("Message: ", message);
+      console.log("Seen User : ", seenUser);
+      console.log("RoomId : ", roomId);
+    }
+      console.log("Seen User : ", seenUser);
+
       try {
           const updatedMessage = await groupMessageModel.findOneAndUpdate(
             {_id: message._id},
@@ -126,7 +133,7 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     delete users[socket.handshake.query.userId];
-    console.log("After Disconnected:", users);
+    // console.log("After Disconnected:", users);
     io.emit("AfterDisconnection_Online_Users", users);
   });
 });

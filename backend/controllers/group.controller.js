@@ -4,6 +4,22 @@ import { groupMessageModel } from "../models/groupMessages.model.js";
 import { io } from "../utils/socket.js";
 import { User } from "../models/user.model.js";
 
+export const getMemberDetails = async(req, res) => {
+  try{
+    const { groupId } = req.params;
+    const groupMembers = (await groupModel.findOne({_id:groupId},{members:1,_id:0})).members
+    const memberDetails = await Promise.all(groupMembers.map( (member) => {
+      const request =  User.findOne({_id:member},{username:1,profile:1, _id:1});
+      return request;
+    }));
+    console.log("Group Members: ", memberDetails);
+    res.status(200).json({members:memberDetails});
+  }catch(error){
+    console.log("Failed: ", error);
+    res.status(500).send("Internal Server Error");
+  }
+}
+
 export const createGroupController = async (req, res) => {
   const { groupName, groupMembers, admin } = req.body;
   console.log(
