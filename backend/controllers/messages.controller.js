@@ -44,7 +44,6 @@ export const getMessagesController = async (req, res) => {
       .find({ groupId: messageRecieverId })
       .sort({ createdAt: -1 })
       .limit(15)
-      .populate("SenderId", "username profile")
       .skip(skipDocuments);
 
     const previousMessages = await messageModel

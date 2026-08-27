@@ -47,8 +47,9 @@ io.on("connection", (socket) => {
   
 
   socket.on("Typing", (mess) => {
-    if (mess.id) {
-      io.to(mess.id).emit("Typing", mess);
+    console.log("Room :", mess.roomId, 'Typer Id: ', mess.typerId)
+    if (mess.roomId) {
+      io.to(mess.roomId).emit("Typing", mess);
     }
   });
 

@@ -12,7 +12,6 @@ export const getMemberDetails = async(req, res) => {
       const request =  User.findOne({_id:member},{username:1,profile:1, _id:1});
       return request;
     }));
-    console.log("Group Members: ", memberDetails);
     res.status(200).json({members:memberDetails});
   }catch(error){
     console.log("Failed: ", error);
