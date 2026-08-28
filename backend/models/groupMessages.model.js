@@ -4,12 +4,12 @@ import { User } from "./user.model.js";
 const messageSchema = new mongoose.Schema(
   {
     groupId: {
-      type: mongoose.Schema.ObjectId,
+      type: mongoose.Schema.Types.ObjectId,
       required: true,
     },
     SenderId: {
-      type: mongoose.Schema.ObjectId,
-      ref: User,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
       required: true,
     },
     text: {
@@ -20,11 +20,20 @@ const messageSchema = new mongoose.Schema(
       default: "",
     },
     reactions: {
-      type: [String],
-      default: null,
+      type: [
+        {
+          reaction: String,
+          userId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            required:true,
+          },
+        },
+      ],
+      default: [],
     },
     seen: {
-      type: [{ type: mongoose.Schema.ObjectId, ref: User }],
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     },
   },
   {

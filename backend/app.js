@@ -44,21 +44,18 @@ let users = {};
 io.on("connection", (socket) => {
   users[socket.handshake.query.userId] = socket.id;
   io.emit("Online_Users", users);
-  
 
   socket.on("Typing", (mess) => {
-    console.log("Room :", mess.roomId, 'Typer Id: ', mess.typerId)
     if (mess.roomId) {
       io.to(mess.roomId).emit("Typing", mess);
     }
   });
 
-  socket.on('join_group', (room) => {
+  socket.on("join_group", (room) => {
     socket.join(room);
-  })
+  });
 
   socket.on("Seen_Message", async (message) => {
-  
     const senderId = message?.SenderId;
     const socketId = Object.entries(users).find(
       ([key, value]) => key == senderId,
@@ -77,31 +74,32 @@ io.on("connection", (socket) => {
       }
   });
 
-  socket.on("groupMessage_Seen", async(message,seenUser,roomId) => {
-    if(!message || !seenUser || !roomId){
+  socket.on("groupMessage_Seen", async (message, seenUser, roomId) => {
+    if (!message || !seenUser || !roomId) {
       console.log("Message: ", message);
       console.log("Seen User : ", seenUser);
       console.log("RoomId : ", roomId);
+      return;
     }
-      console.log("Seen User : ", seenUser);
 
-      try {
-          const updatedMessage = await groupMessageModel.findOneAndUpdate(
-            {_id: message._id},
-            {$addToSet:{seen: seenUser._id}}
-          )
-          io.to(roomId).emit("SeenBy_GroupMembers", updatedMessage)
-      } catch (error) {
-        console.log("Group Message Error: ", error)
-      };
-  })
+    try {
+      const updatedMessage = await groupMessageModel.findOneAndUpdate(
+        { _id: message._id },
+        { $addToSet: { seen: seenUser._id } },
+        {returnDocument:'after'}
+      );
+      io.to(roomId).emit("SeenBy_GroupMembers", updatedMessage);
+    } catch (error) {
+      console.log("Group Message Error: ", error);
+    }
+  });
 
   socket.on("Reacted_To_Message", async (mess) => {
     try {
       const updatedMessage = await messageModel.findOneAndUpdate(
         { _id: mess.messageId },
         { $set: { reactions: mess.reaction } },
-        { new: true },
+        { returnDocument: 'after' },
       );
       const ReceiversocketId = users[updatedMessage.ReceiverId];
       const SendersocketId = users[updatedMessage.SenderId];
@@ -114,15 +112,68 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("Reacted_To_GroupMessage", async (message) => {
+    if (
+      !message.userId ||
+      !message.messageId ||
+      !message.reaction ||
+      !message.roomId
+    ) {
+      console.log("Invalid request");
+      console.log("\nMessage Id: ", message.messageId);
+      console.log("\nReaction: ", message.reaction);
+      console.log("\nUser: ", message.userId);
+      console.log("\nRoom Id: ", message.roomId);
+      return;
+    }
+    try {
+      const { messageId, reaction: sentReaction, userId, roomId } = message;
+
+      const updatedMessage = await groupMessageModel.findOneAndUpdate(
+        { _id: messageId },
+        {
+          $addToSet: { reactions: { reaction: sentReaction, userId: userId } },
+        },
+        { returnDocument: 'after' },
+      );
+      io.to(roomId).emit("Reaction_For_GroupMessage", updatedMessage);
+    } catch (error) {
+      console.log("Failed To Set Reaction : ", error);
+    }
+  });
+
+  socket.on("Delete_GroupMessage_Reaction", async (message) => {
+    if (!message) {
+      console.log("Invalid request");
+      console.log("\nMessage Id: ", message.messageId);
+      console.log("\nUser: ", message.userId);
+      console.log("\nRoom Id: ", message.roomId);
+      return;
+    }
+    try {
+      const { messageId, userId, roomId } = message;
+      const updatedMessage = await groupMessageModel.findOneAndUpdate(
+        { _id: messageId },
+        {
+          $pull: { reactions: { userId: userId } },
+        },
+        { returnDocument: 'after' },
+      );
+      io.to(roomId).emit("Deleted_GroupMessage_Reaction", updatedMessage);
+    } catch (error) {
+      console.log("Failed To Remove Reaction : ", error);
+    }
+  });
+
   socket.on("Delete_Reaction", async (mess) => {
     try {
       const updatedMessage = await messageModel.findOneAndUpdate(
         { _id: mess.messageId },
         { $set: { reactions: mess.reaction } },
-        { new: true },
+        { returnDocument: 'after' },
       );
-      const ReceiversocketId = users[updatedMessage.ReceiverId];
-      const SendersocketId = users[updatedMessage.SenderId];
+      const ReceiversocketId = users[updatedMessage?.ReceiverId];
+      const SendersocketId = users[updatedMessage?.SenderId];
       io.to([ReceiversocketId, SendersocketId]).emit(
         "Deleted_Reaction",
         updatedMessage,

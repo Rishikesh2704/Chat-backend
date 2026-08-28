@@ -7,8 +7,9 @@ const messagesRouter = Router();
 
 messagesRouter.get('/users', verifyToken , getUsersController)
 messagesRouter.get('/:userId/:skipDocuments', verifyToken, getMessagesController)
-messagesRouter.delete('/:messageId', verifyToken, deleteMessageController)
 
 messagesRouter.post('/sendMessage/:userId', [verifyToken, upload.single('image')], sendMessagesController)
+
+messagesRouter.delete('/deleteMessage/:messageId', verifyToken, deleteMessageController)
 
 export default messagesRouter

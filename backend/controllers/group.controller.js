@@ -4,20 +4,27 @@ import { groupMessageModel } from "../models/groupMessages.model.js";
 import { io } from "../utils/socket.js";
 import { User } from "../models/user.model.js";
 
-export const getMemberDetails = async(req, res) => {
-  try{
+export const getMemberDetails = async (req, res) => {
+  try {
     const { groupId } = req.params;
-    const groupMembers = (await groupModel.findOne({_id:groupId},{members:1,_id:0})).members
-    const memberDetails = await Promise.all(groupMembers.map( (member) => {
-      const request =  User.findOne({_id:member},{username:1,profile:1, _id:1});
-      return request;
-    }));
-    res.status(200).json({members:memberDetails});
-  }catch(error){
+    const groupMembers = (
+      await groupModel.findOne({ _id: groupId }, { members: 1, _id: 0 })
+    ).members;
+    const memberDetails = await Promise.all(
+      groupMembers.map((member) => {
+        const request = User.findOne(
+          { _id: member },
+          { username: 1, profile: 1, _id: 1 },
+        );
+        return request;
+      }),
+    );
+    res.status(200).json({ members: memberDetails });
+  } catch (error) {
     console.log("Failed: ", error);
     res.status(500).send("Internal Server Error");
   }
-}
+};
 
 export const createGroupController = async (req, res) => {
   const { groupName, groupMembers, admin } = req.body;
@@ -89,7 +96,7 @@ export const removeMemberController = async (req, res) => {
   }
 };
 
-export const groupMessagesController = async (req, res) => {
+export const sendGroupMessageController = async (req, res) => {
   const { groupId } = req.params;
   if (!groupId) {
     res.status(404).send("Invalid Request");
@@ -103,7 +110,7 @@ export const groupMessagesController = async (req, res) => {
       const response = await uploadFile(req.file?.path);
       imageUrl = response.secure_url;
     }
- 
+
     const groupMessage = new groupMessageModel({
       groupId,
       SenderId: senderId,
@@ -111,8 +118,7 @@ export const groupMessagesController = async (req, res) => {
       image: imageUrl,
     });
     const savedMessage = await groupMessage.save();
-
-    await savedMessage.populate("SenderId", " username profile");
+    console.log("saved Message:", savedMessage);
     await new Promise((resolve, reject) => {
       io.to(room)
         .timeout(500)
@@ -131,5 +137,15 @@ export const groupMessagesController = async (req, res) => {
   } catch (error) {
     console.log(error);
     res.status(500).send("Internal Server Error");
+  }
+};
+
+export const deleteGroupMessageController = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const foundMessage = await groupMessageModel.findOneAndDelete({_id:messageId})
+    res.status(200).json("Deleted Message Successfully");
+  } catch (error) {
+    console.log("Failed To Delete Group Message: ", error);
   }
 };
