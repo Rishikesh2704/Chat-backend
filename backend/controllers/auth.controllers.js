@@ -156,7 +156,7 @@ export const refreshTokenController = async (req, res) => {
 export const uploadProfileController = async (req, res) => {
   try {
     const { id: userId } = req.user;
-    const { oldProfile} = req.body;
+    const { oldProfile } = req.body;
     console.log("user id", userId);
     if (!req.file) {
       res.status(404).send({ message: "No Image Found!" });
@@ -167,7 +167,7 @@ export const uploadProfileController = async (req, res) => {
       const publicId = image[length - 1].split(".")[0];
       const deletedFile = await deleteUploadedfile(publicId);
     }
-    console.log("Old Profile:", oldProfile)
+    console.log("Old Profile:", oldProfile);
     console.log("File:", req.file);
     const { secure_url: profileUrl } = await uploadFile(req.file.path);
     const user = await User.findOneAndUpdate(
@@ -180,5 +180,30 @@ export const uploadProfileController = async (req, res) => {
   } catch (error) {
     console.log("Error: ", error);
     res.status(500).send({ message: "Internal Server Error!" });
+  }
+};
+
+export const searchUserController = async (req, res) => {
+  try {
+    const { u, page } = req.query;
+
+    if (!u) {
+      res.status(404).send("Empty query");
+      return;
+    }
+    const LIMIT = 10;
+    const SKIP = LIMIT * page;
+    const searchResponse = await User.find({
+      username: { $regex: u, $options: "i" },
+    })
+      // .sort({ createdAt: -1 })
+      // .limit(LIMIT)
+      // .skip(SKIP);
+    res.status(200).json({
+      users: searchResponse,
+    });
+  } catch (error) {
+    console.log("Error", error);
+    res.status(500).send("Internal Server Error");
   }
 };

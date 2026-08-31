@@ -1,4 +1,3 @@
-import { METHODS } from "http";
 import cookies from "cookie-parser";
 import dotenv from "dotenv";
 import cors from "cors";
@@ -10,9 +9,9 @@ import { connectDb } from "./utils/db.js";
 import { io, app, server } from "./utils/socket.js";
 import { messageModel } from "./models/messages.model.js";
 import groupRouter from "./routers/group.js";
-import { User } from "./models/user.model.js";
-import { groupModel } from "./models/group.model.js";
 import { groupMessageModel } from "./models/groupMessages.model.js";
+import { searchUserController } from "./controllers/auth.controllers.js";
+import { verifyToken } from "./middlewares/verifyToken.js";
 
 dotenv.config();
 const PORT = 3000;
@@ -36,9 +35,13 @@ app.get("/", (req, res) => {
   res.send({ message: "Convo API" });
 });
 
+app.get('/search', verifyToken , searchUserController)
+
 app.use("/auth/", authRouter);
 app.use("/messages", messagesRouter);
 app.use("/group", groupRouter);
+
+
 let users = {};
 
 io.on("connection", (socket) => {

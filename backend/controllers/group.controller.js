@@ -59,8 +59,9 @@ export const createGroupController = async (req, res) => {
 };
 
 export const addMemberController = async (req, res) => {
+  const { id: userId } = req.user;
   try {
-    const { userId, groupId, memberId } = req.body;
+    const { groupId, memberId } = req.body;
     const group = await groupModel.findOne({
       $and: [{ _id: groupId }, { Admins: userId }],
     });
@@ -81,18 +82,44 @@ export const addMemberController = async (req, res) => {
 };
 
 export const removeMemberController = async (req, res) => {
+  const { id: userId } = req.user;
   try {
-    const { userId, groupId, memberId } = req.body;
+    const { groupId, memberId } = req.body;
     const group = await groupModel.findOne({
-      $and: [{ _id: groupId }, { Admins: "6a27bbe014cda1da0937aec3" }],
+      $and: [{ _id: groupId }, { Admins: userId }],
     });
     if (!group) {
       throw new Error("UnAuthorized");
     }
-    res.status(200).send({ message: "Added Group Member" });
+    const afterRemovingMember = await groupModel.updateOne(
+      {_id:groupId},
+      {$pull:{members:memberId}}
+    )
+    res.status(200).send({ message: "Removed Group Member", afterRemovingMember });
   } catch (error) {
     console.log(error);
     res.status(500).send(error);
+  }
+};
+
+export const leaveGroupController = async (req, res) => {
+  const { id: userId } = req.user;
+  const { groupId } = req.param;
+  console.log("Group Id: ", groupId);
+  if (!groupId) {
+    res.status(404).send("Group Not Found");
+    return;
+  }
+
+  try {
+    const afterLeavingGroup = await groupModel.updateOne(
+      { _id: groupId },
+      { $pull: { members: userId } },
+    );
+    console.log("Group Members after Leaving: ", afterLeavingGroup);
+  } catch (error) {
+    console.log("Internal Server Error: ", error);
+    res.status(500).send("Internal Server Error");
   }
 };
 
@@ -143,7 +170,9 @@ export const sendGroupMessageController = async (req, res) => {
 export const deleteGroupMessageController = async (req, res) => {
   try {
     const { messageId } = req.params;
-    const foundMessage = await groupMessageModel.findOneAndDelete({_id:messageId})
+    const foundMessage = await groupMessageModel.findOneAndDelete({
+      _id: messageId,
+    });
     res.status(200).json("Deleted Message Successfully");
   } catch (error) {
     console.log("Failed To Delete Group Message: ", error);

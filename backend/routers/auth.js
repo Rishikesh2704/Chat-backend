@@ -13,4 +13,5 @@ authRouter.get('/logout', logOutController)
 authRouter.post('/uploadProfile', [verifyToken, upload.single('profile')], uploadProfileController)
 
 
-export default authRouter
+
+export default authRouter   
