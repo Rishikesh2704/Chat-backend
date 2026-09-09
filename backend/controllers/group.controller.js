@@ -61,20 +61,28 @@ export const createGroupController = async (req, res) => {
 export const addMemberController = async (req, res) => {
   const { id: userId } = req.user;
   try {
-    const { groupId, memberId } = req.body;
+    const { groupId, members } = req.body;
     const group = await groupModel.findOne({
-      $and: [{ _id: groupId }, { Admins: userId }],
+      $and: [{ _id: groupId }, { admins: userId }],
     });
+    console.log("Group Id : ", members, "\nuserId: ", userId);
     if (!group) {
       throw new Error("UnAuthorized");
     }
+    
+    if (group.members.includes(members._id)) {
+      res.status(200).send("Member already exists");
+      return;
+    }
+
     const afterAddingGroup = await groupModel.findOneAndUpdate(
       { _id: groupId },
-      { $push: { Members: memberId } },
+      { $addToSet: { members: {$each: members} } },
       { returnDocument: "after" },
     );
-    console.log("After Adding Group:", afterAddingGroup);
-    res.status(200).send({ message: "Added Group Member" });
+
+    res.status(200).send({ message: "Added Group Member", group:afterAddingGroup });
+
   } catch (error) {
     console.log(error);
     res.status(500).send(error);
@@ -86,16 +94,21 @@ export const removeMemberController = async (req, res) => {
   try {
     const { groupId, memberId } = req.body;
     const group = await groupModel.findOne({
-      $and: [{ _id: groupId }, { Admins: userId }],
+      $and: [{ _id: groupId }, { admins: userId }],
     });
     if (!group) {
       throw new Error("UnAuthorized");
     }
+    console.log("Member Id:", memberId)
     const afterRemovingMember = await groupModel.updateOne(
-      {_id:groupId},
-      {$pull:{members:memberId}}
-    )
-    res.status(200).send({ message: "Removed Group Member", afterRemovingMember });
+      { _id: groupId },
+      { $pullAll: { members: memberId } },
+      {returnDocument:"after"}
+    );
+    console.log("Removed Member: ", afterRemovingMember)
+    res
+      .status(200)
+      .send({ message: "Removed Group Member", afterRemovingMember });
   } catch (error) {
     console.log(error);
     res.status(500).send(error);

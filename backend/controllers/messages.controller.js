@@ -6,6 +6,7 @@ import { User } from "../models/user.model.js";
 import { io } from "../utils/socket.js";
 import { groupModel } from "../models/group.model.js";
 import { groupMessageModel } from "../models/groupMessages.model.js";
+import { Conversation } from "../models/conversation.model.js";
 
 dotenv.config();
 
@@ -87,8 +88,11 @@ export const sendMessagesController = async (req, res) => {
       image: imageUrl,
       reactions: "",
     });
+
     const savedMessage = await newMessage.save();
+
     console.log("Receiver SocketId: ", receiverSocketId);
+
     await new Promise((resolve, reject) =>
       io
         .to(receiverSocketId)
@@ -102,6 +106,8 @@ export const sendMessagesController = async (req, res) => {
           }
         }),
     );
+    
+    
     res.status(201).json({
       message: "Message Sent Successfully",
       newMessage,

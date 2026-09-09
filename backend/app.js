@@ -23,7 +23,7 @@ const corsOptions = {
     "http://localhost:5175",
     "http://localhost:5182",
   ],
-  methods: ["GET", "POST", "DELETE"],
+  methods: ["GET", "POST", "DELETE","PUT"],
   credentials: true,
 };
 

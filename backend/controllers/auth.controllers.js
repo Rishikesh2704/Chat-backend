@@ -105,7 +105,7 @@ export const loginContoller = [
       const refToken = await refreshToken(user.id, res);
       return res.status(200).send({
         message: "Logged In!",
-        User: user,
+        user: user,
       });
     } catch (error) {
       console.log(error);
@@ -186,19 +186,20 @@ export const uploadProfileController = async (req, res) => {
 export const searchUserController = async (req, res) => {
   try {
     const { u, page } = req.query;
-
+    const LIMIT = 10;
+    const SKIP = LIMIT * page;
+    
     if (!u) {
       res.status(404).send("Empty query");
       return;
     }
-    const LIMIT = 10;
-    const SKIP = LIMIT * page;
+
     const searchResponse = await User.find({
       username: { $regex: u, $options: "i" },
-    })
-      // .sort({ createdAt: -1 })
-      // .limit(LIMIT)
-      // .skip(SKIP);
+    });
+    // .sort({ createdAt: -1 })
+    // .limit(LIMIT)
+    // .skip(SKIP);
     res.status(200).json({
       users: searchResponse,
     });
