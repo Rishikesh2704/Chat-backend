@@ -1,8 +1,13 @@
 import mongoose from "mongoose";
 import { User } from "./user.model.js";
+import { Conversations } from "./conversation.model.js";
 
 const messagesSchema = new mongoose.Schema(
   {
+    conversationId: {
+      type: mongoose.Types.ObjectId,
+      ref: Conversations,
+    },
     SenderId: {
       type: mongoose.Types.ObjectId,
       ref: User,
@@ -13,21 +18,26 @@ const messagesSchema = new mongoose.Schema(
       ref: User,
       required: true,
     },
-    text: {
+    messageType: {
       type: String,
+      enum: ["text", "image", "video", "document"],
+      default: "text",
+      required:true
     },
-    seen:{
-      type:Boolean,
-      default:['']
+    messageContent: {
+      type: String, 
+    },
+    seen: {
+      type: Boolean,
+      default: [""],
     },
     image: {
       type: String,
-      default:""
+      default: "",
     },
-    reactions:{
-      type:String,
-    }
-    
+    reactions: {
+      type: String,
+    },
   },
   {
     timestamps: true,

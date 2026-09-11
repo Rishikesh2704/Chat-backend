@@ -6,7 +6,7 @@ import { User } from "../models/user.model.js";
 import { io } from "../utils/socket.js";
 import { groupModel } from "../models/group.model.js";
 import { groupMessageModel } from "../models/groupMessages.model.js";
-import { Conversation } from "../models/conversation.model.js";
+import { Conversations } from "../models/conversation.model.js";
 
 dotenv.config();
 
@@ -26,9 +26,17 @@ export const getUsersController = async (req, res) => {
       }),
     );
     const Friends = [...(Results[0] || [])];
+    const conversations = await Conversations.find({
+      participants: id,
+    }).populate([
+      { path: "participants", select: "username profile" },
+      { path: "group", select: "groupName profile roomId" },
+      
+    ]);
 
     const Groups = await groupModel.find({ members: id });
-    res.status(200).send({ Friends, Groups });
+
+    res.status(200).send({ Friends, Groups, Conversations: conversations });
   } catch (error) {
     console.log(error);
     res.status(500).json({
@@ -73,17 +81,46 @@ export const sendMessagesController = async (req, res) => {
   try {
     const { _id: SenderId } = req.user;
     const { userId: ReceiverId } = req.params;
-    const { message, receiverSocketId } = req.body;
+    const { message, receiverSocketId, conversationId = null } = req.body;
     let imageUrl;
     if (req.file) {
       const response = await uploadFile(req.file?.path);
       imageUrl = response.secure_url;
     }
+    const messageType = imageUrl !== undefined ? "image" : "text";
+    console.log("Conversation Id: ", conversationId)
+    let conversation = await Conversations.findOneAndUpdate(
+      { _id: conversationId },
+      {
+        $set: {
+          lastMessage: {
+            message: message,
+            senderId: SenderId,
+            messageType: messageType,
+          },
+        },
+      },
+      { returnDocument: "after" },
+    );
+    if (!conversation) {
+      conversation = new Conversations({
+        participants: [SenderId, ReceiverId],
+        lastMessage: {
+          senderId: SenderId,
+          message: message,
+          messageType,
+        },
+      });
+    }
+    conversation.populate("participants", "username profile");
+    await conversation.save();
 
     const newMessage = new messageModel({
       SenderId,
       ReceiverId,
-      text: message,
+      conversationId: conversation._id,
+      messageType,
+      messageContent: message,
       seen: false,
       image: imageUrl,
       reactions: "",
@@ -97,20 +134,24 @@ export const sendMessagesController = async (req, res) => {
       io
         .to(receiverSocketId)
         .timeout(500)
-        .emit("privateMessage", savedMessage, (err, response) => {
-          if (err) {
-            reject(new Error("Failed to Sent Message!"));
-            console.log("Failed", err);
-          } else {
-            resolve(response.length > 0 ? response : [false]);
-          }
-        }),
+        .emit(
+          "privateMessage",
+          { savedMessage, conversation },
+          (err, response) => {
+            if (err) {
+              reject(new Error("Failed to Sent Message!"));
+              console.log("Failed", err);
+            } else {
+              resolve(response.length > 0 ? response : [false]);
+            }
+          },
+        ),
     );
-    
-    
+
     res.status(201).json({
       message: "Message Sent Successfully",
       newMessage,
+      conversation,
     });
   } catch (error) {
     console.log("Throw Error:", error);
@@ -125,18 +166,49 @@ export const deleteMessageController = async (req, res) => {
   try {
     const { _id: userId } = req.user;
     const { messageId } = req.params;
-    console.log("User Id: ", userId, "Message Id: ", messageId);
-    const deletedMessage = await messageModel.findOneAndDelete({
-      $and: [{ SenderId: userId }, { _id: messageId }],
-    });
+    const deletedMessage = await messageModel.findOneAndDelete(
+      {
+        $and: [{ SenderId: userId }, { _id: messageId }],
+      },
+      { returnDocument: "after" },
+    );
     if (deletedMessage && deletedMessage.image) {
       const image = deletedMessage.image.split("/");
       const length = image.length;
       const publicId = image[length - 1].split(".")[0];
-      const deletedFile = await deleteUploadedfile(publicId);
+      await deleteUploadedfile(publicId);
     }
+    const lastMessage = (
+      await messageModel
+        .find({
+          $and: [
+            { SenderId: userId },
+            { ReceiverId: deletedMessage.ReceiverId },
+          ],
+        })
+        .sort({ createdAt: -1 })
+        .limit(1)
+    )[0];
+
+    console.log("Last Message After Deleting: ", lastMessage.messageContent);
+
+    const conversation = await Conversations.findOneAndUpdate(
+      { _id: deletedMessage.conversationId },
+      {
+        $set: {
+          lastMessage: {
+            message: lastMessage.messageContent,
+            senderId: lastMessage.SenderId,
+            messageType: lastMessage.messageType,
+          },
+        },
+      },
+      { returnDocument: "after" },
+    ).populate("participants", "username profile");
+    console.log("Conversation : ", conversation);
     res.status(200).json({
       message: deletedMessage,
+      conversation: conversation,
     });
   } catch (error) {
     console.log(error);

@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { groupMessageModel } from "../models/groupMessages.model.js";
 import { io } from "../utils/socket.js";
 import { User } from "../models/user.model.js";
+import { Conversations } from "../models/conversation.model.js";
 
 export const getMemberDetails = async (req, res) => {
   try {
@@ -69,7 +70,7 @@ export const addMemberController = async (req, res) => {
     if (!group) {
       throw new Error("UnAuthorized");
     }
-    
+
     if (group.members.includes(members._id)) {
       res.status(200).send("Member already exists");
       return;
@@ -77,12 +78,13 @@ export const addMemberController = async (req, res) => {
 
     const afterAddingGroup = await groupModel.findOneAndUpdate(
       { _id: groupId },
-      { $addToSet: { members: {$each: members} } },
+      { $addToSet: { members: { $each: members } } },
       { returnDocument: "after" },
     );
 
-    res.status(200).send({ message: "Added Group Member", group:afterAddingGroup });
-
+    res
+      .status(200)
+      .send({ message: "Added Group Member", group: afterAddingGroup });
   } catch (error) {
     console.log(error);
     res.status(500).send(error);
@@ -99,13 +101,13 @@ export const removeMemberController = async (req, res) => {
     if (!group) {
       throw new Error("UnAuthorized");
     }
-    console.log("Member Id:", memberId)
+    console.log("Member Id:", memberId);
     const afterRemovingMember = await groupModel.updateOne(
       { _id: groupId },
       { $pullAll: { members: memberId } },
-      {returnDocument:"after"}
+      { returnDocument: "after" },
     );
-    console.log("Removed Member: ", afterRemovingMember)
+    console.log("Removed Member: ", afterRemovingMember);
     res
       .status(200)
       .send({ message: "Removed Group Member", afterRemovingMember });
@@ -144,21 +146,53 @@ export const sendGroupMessageController = async (req, res) => {
   }
   try {
     const { _id: senderId } = req.user;
-    const { message, room } = req.body;
+    const { message, room, conversationId = null } = req.body;
     let imageUrl;
     if (req.file) {
       const response = await uploadFile(req.file?.path);
       imageUrl = response.secure_url;
     }
+    const messageType = imageUrl !== undefined ? "image" : "text";
+    const groupMembers = await groupModel.find(
+      { _id: groupId },
+      { members: 1, _id: 0 },
+    );
+    let conversation = await Conversations.findOneAndUpdate(
+      { _id: conversationId },
+      {
+        $set: {
+          lastMessage: {
+            message: message,
+            senderId: senderId,
+            messageType: messageType,
+          },
+        },
+      },
+      { returnDocument: "after" },
+    );
+    if (!conversation) {
+      conversation = new Conversations({
+        participants: groupMembers[0].members,
+        lastMessage: {
+          senderId: senderId,
+          message: message,
+          messageType,
+        },
+      });
+    }
+    conversation.populate("participants", "username profile");
+    await conversation.save();
 
     const groupMessage = new groupMessageModel({
+      conversationId: conversation._id,
       groupId,
       SenderId: senderId,
-      text: message,
+      messageType,
+      messageContent: message,
       image: imageUrl,
     });
+
     const savedMessage = await groupMessage.save();
-    console.log("saved Message:", savedMessage);
     await new Promise((resolve, reject) => {
       io.to(room)
         .timeout(500)
@@ -173,6 +207,7 @@ export const sendGroupMessageController = async (req, res) => {
     res.status(201).json({
       message: "Sent Message To Successfully",
       newMessage: savedMessage,
+      conversation: conversation,
     });
   } catch (error) {
     console.log(error);

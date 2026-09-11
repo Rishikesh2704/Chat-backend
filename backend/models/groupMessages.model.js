@@ -1,8 +1,12 @@
 import mongoose from "mongoose";
-import { User } from "./user.model.js";
+import { Conversations } from "./conversation.model.js";
 
 const messageSchema = new mongoose.Schema(
   {
+    conversationId: {
+      type: mongoose.Types.ObjectId,
+      ref: Conversations,
+    },
     groupId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
@@ -12,7 +16,13 @@ const messageSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    text: {
+    messageType: {
+      type: String,
+      enum: ["text", "image", "video", "document"],
+      default: "text",
+      required: true,
+    },
+    messageContent: {
       type: String,
     },
     image: {
@@ -26,7 +36,7 @@ const messageSchema = new mongoose.Schema(
           userId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User",
-            required:true,
+            required: true,
           },
         },
       ],

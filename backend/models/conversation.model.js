@@ -4,31 +4,36 @@ import { messageModel } from "./messages.model.js";
 
 const conversationSchema = new mongoose.Schema(
   {
-    paticipants: {
-      type: [
-        {
-          type: {
-            id: mongoose.Types.ObjectId,
-            username: String,
-            profile: String,
-          },
-          ref: User,
-        },
-      ],
-      required:true,
+    participants: {
+      type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+      required: true,
     },
-    lastMessage:{
-        type:{
-            message:String,
-            senderId:mongoose.Types.ObjectId,
-            updatedAt:String,
+    isGroup:{
+      type:Boolean,
+      default:false,
+    },
+    group: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null,
+      ref: "Group",
+    },
+    lastMessage: {
+      type: {
+        message: String,
+        senderId: { type: mongoose.Types.ObjectId, ref: "User" },
+        messageType: {
+          type: String,
+          enum: ["text", "image", "video", "document"],
         },
-        ref:messageModel
-    }
+      },
+    },
   },
   {
     timestamps: true,
   },
 );
 
-export const Conversation = new mongoose.model("Conversation",conversationSchema);
+export const Conversations = new mongoose.model(
+  "Conversation",
+  conversationSchema,
+);
