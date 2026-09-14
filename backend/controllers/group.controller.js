@@ -157,29 +157,31 @@ export const sendGroupMessageController = async (req, res) => {
       { _id: groupId },
       { members: 1, _id: 0 },
     );
-    let conversation = await Conversations.findOneAndUpdate(
-      { _id: conversationId },
-      {
-        $set: {
-          lastMessage: {
-            message: message,
-            senderId: senderId,
-            messageType: messageType,
+    let conversation = new Conversations({
+      participants: groupMembers[0].members,
+      lastMessage: {
+        senderId: senderId,
+        message: message,
+        messageType,
+      },
+    });
+
+    if (conversationId) {
+      conversation = await Conversations.findOneAndUpdate(
+        { _id: conversationId },
+        {
+          $set: {
+            lastMessage: {
+              message: message,
+              senderId: senderId,
+              messageType: messageType,
+            },
           },
         },
-      },
-      { returnDocument: "after" },
-    );
-    if (!conversation) {
-      conversation = new Conversations({
-        participants: groupMembers[0].members,
-        lastMessage: {
-          senderId: senderId,
-          message: message,
-          messageType,
-        },
-      });
+        { returnDocument: "after" },
+      );
     }
+
     conversation.populate("participants", "username profile");
     await conversation.save();
 

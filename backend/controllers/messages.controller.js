@@ -89,7 +89,16 @@ export const sendMessagesController = async (req, res) => {
     }
     const messageType = imageUrl !== undefined ? "image" : "text";
     console.log("Conversation Id: ", conversationId)
-    let conversation = await Conversations.findOneAndUpdate(
+      let conversation = new Conversations({
+        participants: [SenderId, ReceiverId],
+        lastMessage: {
+          senderId: SenderId,
+          message: message,
+          messageType,
+        },
+      });
+    if(conversationId){
+      conversation = await Conversations.findOneAndUpdate(
       { _id: conversationId },
       {
         $set: {
@@ -102,16 +111,9 @@ export const sendMessagesController = async (req, res) => {
       },
       { returnDocument: "after" },
     );
-    if (!conversation) {
-      conversation = new Conversations({
-        participants: [SenderId, ReceiverId],
-        lastMessage: {
-          senderId: SenderId,
-          message: message,
-          messageType,
-        },
-      });
     }
+    
+  
     conversation.populate("participants", "username profile");
     await conversation.save();
 
