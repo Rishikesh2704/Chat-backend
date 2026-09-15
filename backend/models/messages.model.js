@@ -8,12 +8,12 @@ const messagesSchema = new mongoose.Schema(
       type: mongoose.Types.ObjectId,
       ref: Conversations,
     },
-    SenderId: {
+    senderId: {
       type: mongoose.Types.ObjectId,
       ref: User,
       required: true,
     },
-    ReceiverId: {
+    receiverId: {
       type: mongoose.Types.ObjectId,
       ref: User,
       required: true,

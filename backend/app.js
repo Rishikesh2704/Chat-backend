@@ -59,7 +59,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("Seen_Message", async (message) => {
-    const senderId = message?.SenderId;
+    const senderId = message?.senderId;
     const socketId = Object.entries(users).find(
       ([key, value]) => key == senderId,
     );
@@ -104,8 +104,8 @@ io.on("connection", (socket) => {
         { $set: { reactions: mess.reaction } },
         { returnDocument: 'after' },
       );
-      const ReceiversocketId = users[updatedMessage.ReceiverId];
-      const SendersocketId = users[updatedMessage.SenderId];
+      const ReceiversocketId = users[updatedMessage.receiverId];
+      const SendersocketId = users[updatedMessage.senderId];
       io.to([ReceiversocketId, SendersocketId]).emit(
         "Reaction_Update",
         updatedMessage,
@@ -175,8 +175,8 @@ io.on("connection", (socket) => {
         { $set: { reactions: mess.reaction } },
         { returnDocument: 'after' },
       );
-      const ReceiversocketId = users[updatedMessage?.ReceiverId];
-      const SendersocketId = users[updatedMessage?.SenderId];
+      const ReceiversocketId = users[updatedMessage?.receiverId];
+      const SendersocketId = users[updatedMessage?.senderId];
       io.to([ReceiversocketId, SendersocketId]).emit(
         "Deleted_Reaction",
         updatedMessage,

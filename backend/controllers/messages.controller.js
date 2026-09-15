@@ -14,9 +14,9 @@ export const getUsersController = async (req, res) => {
   try {
     const { id } = req.user;
     const dist = await messageModel
-      .find({ ReceiverId: id })
-      .select("SenderId")
-      .distinct("SenderId");
+      .find({ receiverId: id })
+      .select("senderId")
+      .distinct("senderId");
     const Results = await Promise.all(
       dist.map((friend) => {
         const fri = User.find({ _id: friend._id.toString() }).select(
@@ -55,16 +55,18 @@ export const getMessagesController = async (req, res) => {
       .limit(15)
       .skip(skipDocuments);
 
+
     const previousMessages = await messageModel
       .find({
         $or: [
-          { SenderId: myId, ReceiverId: messageRecieverId },
-          { SenderId: messageRecieverId, ReceiverId: myId },
+          { senderId: myId, receiverId: messageRecieverId },
+          { senderId: messageRecieverId, receiverId: myId },
         ],
       })
       .sort({ createdAt: -1 })
       .limit(15)
       .skip(skipDocuments);
+      console.log("Previous Messages: ", previousMessages)
     res
       .status(200)
       .json({ messages: previousMessages, groupMessages: groupMessage });
@@ -79,8 +81,8 @@ export const getMessagesController = async (req, res) => {
 
 export const sendMessagesController = async (req, res) => {
   try {
-    const { _id: SenderId } = req.user;
-    const { userId: ReceiverId } = req.params;
+    const { _id: senderId } = req.user;
+    const { userId: receiverId } = req.params;
     const { message, receiverSocketId, conversationId = null } = req.body;
     let imageUrl;
     if (req.file) {
@@ -90,9 +92,9 @@ export const sendMessagesController = async (req, res) => {
     const messageType = imageUrl !== undefined ? "image" : "text";
     console.log("Conversation Id: ", conversationId)
       let conversation = new Conversations({
-        participants: [SenderId, ReceiverId],
+        participants: [senderId, receiverId],
         lastMessage: {
-          senderId: SenderId,
+          senderId: senderId,
           message: message,
           messageType,
         },
@@ -104,7 +106,7 @@ export const sendMessagesController = async (req, res) => {
         $set: {
           lastMessage: {
             message: message,
-            senderId: SenderId,
+            senderId: senderId,
             messageType: messageType,
           },
         },
@@ -118,8 +120,8 @@ export const sendMessagesController = async (req, res) => {
     await conversation.save();
 
     const newMessage = new messageModel({
-      SenderId,
-      ReceiverId,
+      senderId,
+      receiverId,
       conversationId: conversation._id,
       messageType,
       messageContent: message,
@@ -170,7 +172,7 @@ export const deleteMessageController = async (req, res) => {
     const { messageId } = req.params;
     const deletedMessage = await messageModel.findOneAndDelete(
       {
-        $and: [{ SenderId: userId }, { _id: messageId }],
+        $and: [{ senderId: userId }, { _id: messageId }],
       },
       { returnDocument: "after" },
     );
@@ -184,8 +186,8 @@ export const deleteMessageController = async (req, res) => {
       await messageModel
         .find({
           $and: [
-            { SenderId: userId },
-            { ReceiverId: deletedMessage.ReceiverId },
+            { senderId: userId },
+            { receiverId: deletedMessage.receiverId },
           ],
         })
         .sort({ createdAt: -1 })
@@ -200,7 +202,7 @@ export const deleteMessageController = async (req, res) => {
         $set: {
           lastMessage: {
             message: lastMessage.messageContent,
-            senderId: lastMessage.SenderId,
+            senderId: lastMessage.senderId,
             messageType: lastMessage.messageType,
           },
         },

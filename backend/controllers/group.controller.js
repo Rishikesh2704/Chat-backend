@@ -188,7 +188,7 @@ export const sendGroupMessageController = async (req, res) => {
     const groupMessage = new groupMessageModel({
       conversationId: conversation._id,
       groupId,
-      SenderId: senderId,
+      senderId: senderId,
       messageType,
       messageContent: message,
       image: imageUrl,
