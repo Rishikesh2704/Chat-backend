@@ -9,7 +9,7 @@ export const createToken = async (userId, res) => {
   res.cookie("accessToken", token, {
     maxAge: 1000 * 60 * 60 * 24,
     httpOnly: true,
-    sameSite: "strict",
+    sameSite: "none",
   });
   return token;
 };
