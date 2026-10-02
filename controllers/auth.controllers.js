@@ -173,7 +173,7 @@ export const refreshTokenController = async (req, res) => {
   const incomingRefreshToken = req.cookies.refreshToken;
   console.log("Refresh Token");
   if (!incomingRefreshToken) {
-    res.status(401).json({ message: "Empty Refresh Token" });
+    res.status(401).json({ message: "Empty Refresh Token", cookies:req.cookies });
   }
 
   try {
