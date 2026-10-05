@@ -16,8 +16,10 @@ import { verifyToken } from "./middlewares/verifyToken.js";
 dotenv.config();
 const PORT = 3000;
 
+const allowedOrigins = process.env.ALLOWED_ORIGINS? process.env.ALLOWED_ORIGINS.split(','):[];
+
 const corsOptions = {
-  origin: process.env.ALLOWED_SITES,
+  origin: allowedOrigins,
   methods: ["GET", "POST", "DELETE", "PUT"],
   credentials: true,
 };
