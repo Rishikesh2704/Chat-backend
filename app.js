@@ -19,7 +19,7 @@ const PORT = 3000;
 const allowedOrigins = process.env.ALLOWED_ORIGINS? process.env.ALLOWED_ORIGINS.split(','):[];
 
 const corsOptions = {
-  origin: allowedOrigins,
+  origin: "https://chat-frontend-seven-flax.vercel.app",
   methods: ["GET", "POST", "DELETE", "PUT"],
   credentials: true,
 };
