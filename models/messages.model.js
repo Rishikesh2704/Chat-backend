@@ -27,6 +27,9 @@ const messagesSchema = new mongoose.Schema(
     messageContent: {
       type: String, 
     },
+    iv:{
+      type:String,
+    },
     seen: {
       type: Boolean,
       default: [""],

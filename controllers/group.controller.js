@@ -28,19 +28,19 @@ export const getMemberDetails = async (req, res) => {
 };
 
 export const createGroupController = async (req, res) => {
-  const { groupName, groupMembers, admin } = req.body;
+  const { groupName, members, admin } = req.body;
   console.log(
     "Group Name: ",
     groupName,
     "\n Members :",
-    groupMembers,
+    members,
     "\n Admin",
     admin,
   );
   try {
     const group = new groupModel({
       groupName: groupName,
-      members: [admin, ...groupMembers],
+      members: [admin, ...members],
       admins: [admin],
       roomId: randomUUID(),
     });
@@ -51,7 +51,7 @@ export const createGroupController = async (req, res) => {
         message: "Created Group Successfully",
       });
     else {
-      throw new Error("Failed To create group");
+    res.status(404).send("Failed To create group");
     }
   } catch (error) {
     console.log("Failed To Create Group", error);
@@ -70,8 +70,11 @@ export const addMemberController = async (req, res) => {
     if (!group) {
       throw new Error("UnAuthorized");
     }
+    const doesExist = group.members.forEach((member) => {
+      if (members.includes(member)) return true;
+    });
 
-    if (group.members.includes(members._id)) {
+    if (doesExist) {
       res.status(200).send("Member already exists");
       return;
     }

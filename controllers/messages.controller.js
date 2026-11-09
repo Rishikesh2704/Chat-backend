@@ -13,30 +13,29 @@ dotenv.config();
 export const getUsersController = async (req, res) => {
   try {
     const { id } = req.user;
-    const dist = await messageModel
-      .find({ receiverId: id })
-      .select("senderId")
-      .distinct("senderId");
-    const Results = await Promise.all(
-      dist.map((friend) => {
-        const fri = User.find({ _id: friend._id.toString() }).select(
-          "-password",
-        );
-        return fri;
-      }),
-    );
-    const Friends = [...(Results[0] || [])];
+    // const dist = await messageModel
+    //   .find({ receiverId: id })
+    //   .select("senderId")
+    //   .distinct("senderId");
+    // const Results = await Promise.all(
+    //   dist.map((friend) => {
+    //     const fri = User.find({ _id: friend._id.toString() }).select(
+    //       "-password",
+    //     );
+    //     return fri;
+    //   }),
+    // );
+    // const Friends = [...(Results[0] || [])];
     const conversations = await Conversations.find({
       participants: id,
     }).populate([
       { path: "participants", select: "username profile" },
-      { path: "group", select: "groupName profile roomId" },
-      
+      { path: "group", select: "groupName profile roomId admins members" },
     ]);
 
     const Groups = await groupModel.find({ members: id });
 
-    res.status(200).send({ Friends, Groups, Conversations: conversations });
+    res.status(200).send({ Groups, Conversations: conversations });
   } catch (error) {
     console.log(error);
     res.status(500).json({
@@ -55,7 +54,6 @@ export const getMessagesController = async (req, res) => {
       .limit(15)
       .skip(skipDocuments);
 
-
     const previousMessages = await messageModel
       .find({
         $or: [
@@ -66,10 +64,8 @@ export const getMessagesController = async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(15)
       .skip(skipDocuments);
-      console.log("Previous Messages: ", previousMessages)
-    res
-      .status(200)
-      .json({ messages: previousMessages, groupMessages: groupMessage });
+
+    res.status(200).json({ messages: previousMessages || groupMessage });
   } catch (error) {
     console.log(error);
     res.status(500).json({
@@ -83,39 +79,48 @@ export const sendMessagesController = async (req, res) => {
   try {
     const { _id: senderId } = req.user;
     const { userId: receiverId } = req.params;
-    const { message, receiverSocketId, conversationId = null } = req.body;
+    const { message, key, iv, receiverSocketId, conversationId = null } = req.body;
     let imageUrl;
     if (req.file) {
       const response = await uploadFile(req.file?.path);
       imageUrl = response.secure_url;
     }
+    console.log('Iv:', typeof iv)
     const messageType = imageUrl !== undefined ? "image" : "text";
-    console.log("Conversation Id: ", conversationId)
-      let conversation = new Conversations({
-        participants: [senderId, receiverId],
-        lastMessage: {
-          senderId: senderId,
-          message: message,
-          messageType,
-        },
-      });
-    if(conversationId){
-      conversation = await Conversations.findOneAndUpdate(
-      { _id: conversationId },
-      {
-        $set: {
-          lastMessage: {
-            message: message,
-            senderId: senderId,
-            messageType: messageType,
-          },
-        },
+    // const count = (
+    //   await messageModel.find({ senderId, receiverId, seen: false })
+    // ).length;
+
+    let conversation = new Conversations({
+      participants: [senderId, receiverId],
+      lastMessage: {
+        senderId: senderId,
+        message: message,
+        messageType,
+        messageIv:iv,
       },
-      { returnDocument: "after" },
-    );
+      unreadMessagesCount: { [senderId]: 0, [receiverId]: 1 },
+    });
+    if (conversationId) {
+      conversation = await Conversations.findOneAndUpdate(
+        { _id: conversationId },
+        {
+          $set: {
+            lastMessage: {
+              message: message,
+              senderId: senderId,
+              messageType: messageType,
+              messageIv:iv,
+            },
+          },
+          $inc:{
+            [`unreadMessagesCount.${receiverId}`]:1
+          }
+        },
+        { returnDocument: "after" },
+      );
     }
-    
-  
+
     conversation.populate("participants", "username profile");
     await conversation.save();
 
@@ -125,14 +130,14 @@ export const sendMessagesController = async (req, res) => {
       conversationId: conversation._id,
       messageType,
       messageContent: message,
+      iv,
       seen: false,
       image: imageUrl,
       reactions: "",
     });
 
     const savedMessage = await newMessage.save();
-
-    console.log("Receiver SocketId: ", receiverSocketId);
+    // console.log("Receiver SocketId: ", receiverSocketId);
 
     await new Promise((resolve, reject) =>
       io
@@ -140,7 +145,7 @@ export const sendMessagesController = async (req, res) => {
         .timeout(500)
         .emit(
           "privateMessage",
-          { savedMessage, conversation },
+          { savedMessage, conversation, key, iv },
           (err, response) => {
             if (err) {
               reject(new Error("Failed to Sent Message!"));

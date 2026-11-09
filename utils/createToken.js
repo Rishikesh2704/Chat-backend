@@ -4,7 +4,7 @@ import crypto from "crypto";
 
 export const createToken = async (userId, res) => {
   const token = jwt.sign({ userId }, process.env.JWT_ACCESS_TOKEN_SECRET, {
-    expiresIn: "1m",
+    expiresIn: "15m",
   });
   res.cookie("accessToken", token, {
     maxAge: 1000 * 60 * 60 * 24,

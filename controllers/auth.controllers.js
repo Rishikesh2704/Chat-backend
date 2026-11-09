@@ -157,11 +157,11 @@ export const logOutController = async (req, res) => {
       { $set: { revoked: true } },
       { returnDocument: "after" },
     );
-    console.log("Refresh Token: ", refreshTokenHash);
-    console.log("Found Token: ", found);
-
+   
     res.cookie("accessToken", "");
     res.cookie("refreshToken", "");
+
+    console.log("Logged Out")
     return res.status(200).send({ message: "Logged Out Successfully!" });
   } catch (error) {
     console.log(error);
@@ -171,7 +171,6 @@ export const logOutController = async (req, res) => {
 
 export const refreshTokenController = async (req, res) => {
   const incomingRefreshToken = req.cookies.refreshToken;
-  console.log("Refresh Token");
   if (!incomingRefreshToken) {
     res.status(401).json({ message: "Empty Refresh Token", cookies:req.cookies });
   }
@@ -184,7 +183,7 @@ export const refreshTokenController = async (req, res) => {
     if (!decodedToken) {
       throw new Error("Invalid Refresh token");
     }
-    const refreshTokenHash = crypto
+    const refreshTokenHash =  crypto
       .createHash("sha256")
       .update(incomingRefreshToken)
       .digest("hex");
@@ -196,12 +195,10 @@ export const refreshTokenController = async (req, res) => {
       .createHash("sha256")
       .update(newRefreshToken)
       .digest("hex");
-
     const isRevoked = await sessionModel.findOne({
       refreshTokenHash,
       revoked: false,
     });
-
     if (!isRevoked) {
       return res.status(404).send("Invalid Refresh Token");
     }

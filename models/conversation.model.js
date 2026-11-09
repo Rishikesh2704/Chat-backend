@@ -8,14 +8,19 @@ const conversationSchema = new mongoose.Schema(
       type: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
       required: true,
     },
-    isGroup:{
-      type:Boolean,
-      default:false,
+    isGroup: {
+      type: Boolean,
+      default: false,
     },
     group: {
       type: mongoose.Schema.Types.ObjectId,
       default: null,
       ref: "Group",
+    },
+    unreadMessagesCount: {
+      type: Map,
+      of:Number,
+      default:{},
     },
     lastMessage: {
       type: {
@@ -25,6 +30,7 @@ const conversationSchema = new mongoose.Schema(
           type: String,
           enum: ["text", "image", "video", "document"],
         },
+        messageIv:String,
       },
     },
   },
