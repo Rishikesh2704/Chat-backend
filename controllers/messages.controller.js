@@ -79,13 +79,13 @@ export const sendMessagesController = async (req, res) => {
   try {
     const { _id: senderId } = req.user;
     const { userId: receiverId } = req.params;
-    const { message, key, iv, receiverSocketId, conversationId = null } = req.body;
+    const { message, key, iv, sharedKey, receiverSocketId, conversationId = null } = req.body;
     let imageUrl;
     if (req.file) {
       const response = await uploadFile(req.file?.path);
       imageUrl = response.secure_url;
     }
-    console.log('Iv:', typeof iv)
+    console.log('Shared Key:', sharedKey)
     const messageType = imageUrl !== undefined ? "image" : "text";
     // const count = (
     //   await messageModel.find({ senderId, receiverId, seen: false })
@@ -145,7 +145,7 @@ export const sendMessagesController = async (req, res) => {
         .timeout(500)
         .emit(
           "privateMessage",
-          { savedMessage, conversation, key, iv },
+          { savedMessage, conversation, key, iv, sharedKey },
           (err, response) => {
             if (err) {
               reject(new Error("Failed to Sent Message!"));

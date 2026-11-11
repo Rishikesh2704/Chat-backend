@@ -12,10 +12,6 @@ const publicKeySchema = new mongoose.Schema(
             required:true,
             unique:true,
         },
-        algorithm:{
-            type:String,
-            required:true
-        }
     },
     {
         timestamps:true

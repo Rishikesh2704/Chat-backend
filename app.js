@@ -18,10 +18,16 @@ import { PublicKey } from "./models/publicKeys.model.js";
 dotenv.config();
 const PORT = 3000;
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS? process.env.ALLOWED_ORIGINS.split(','):[];
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",")
+  : [];
 
 const corsOptions = {
-  // origin: ["https://convocon.vercel.app",'http://localhost:5173', 'http://localhost:4175',],
+  // origin: [
+  //   "https://convocon.vercel.app",
+  //   "http://localhost:5173",
+  //   "http://localhost:4175",
+  // ],
   origin: "https://convocon.vercel.app",
   methods: ["GET", "POST", "DELETE", "PUT"],
   credentials: true,
@@ -32,7 +38,7 @@ app.use(express.json({ extended: false }));
 app.use(cookies());
 
 app.get("/", (req, res) => {
-  res.send('<h2>Hello</h2>');
+  res.send("<h2>Hello</h2>");
 });
 
 app.get("/search", verifyToken, searchUserController);
@@ -41,36 +47,39 @@ app.use("/auth", authRouter);
 app.use("/messages", messagesRouter);
 app.use("/group", groupRouter);
 
-app.get("/users/publicKey/:userId",verifyToken,  async (req, res) => {
+app.get("/users/publicKey/:userId", verifyToken, async (req, res) => {
   const { userId } = req.params;
   try {
-    const response = await PublicKey.findOne({user:userId})
-    return res.status(200).send({message:"Found Public Key",publicKey:response});
+    const response = await PublicKey.findOne({ user: userId });
+    return res
+      .status(200)
+      .send({ message: "Found Public Key", publicKey: response });
   } catch (error) {
     console.log("Failed to get public key", error);
     res.status(500).send("Internal server error");
   }
-})
+});
 
-app.post("/users/publicKey", verifyToken,  async (req, res) => {
+app.post("/users/publicKey", verifyToken, async (req, res) => {
   try {
     const user = req.user;
-    const { publicKey } = req.body
+    const { publicKey } = req.body;
     const publicKeyResponse = new PublicKey({
       user,
-      publicKey:  JSON.stringify(publicKey),
-      algorithm:publicKey.alg
-    })
-    
-    if(publicKeyResponse){
-      await publicKeyResponse.save()
+      publicKey: publicKey,
+    });
+
+    if (publicKeyResponse) {
+      await publicKeyResponse.save();
     }
     res.status(201).send("Succesfully stored public key");
   } catch (error) {
-    console.log("Failed to store public key:", error)
-    res.status(404).send({message:"Failed to store public key", error:error})
+    // console.log("Failed to store public key:", error);
+    res
+      .status(404)
+      .send({ message: "Failed to store public key", error: error });
   }
-})
+});
 
 let users = {};
 
@@ -78,7 +87,7 @@ io.on("connection", (socket) => {
   users[socket.handshake.query.userId] = socket.id;
   // io.emit("Online_Users", users);
   socket.on("connected", () => {
-    io.emit("Online_Users", users)
+    io.emit("Online_Users", users);
   });
 
   socket.on("Typing", (mess) => {
@@ -103,14 +112,17 @@ io.on("connection", (socket) => {
           { _id: message._id },
           { $set: { seen: true } },
         );
-        const updatedReadMessages = await Conversations.findOneAndUpdate({_id:message.conversationId},{
-          $set:{
-            [`unreadMessagesCount.${message.receiverId}`]:0
-          }
-        })
+        const updatedReadMessages = await Conversations.findOneAndUpdate(
+          { _id: message.conversationId },
+          {
+            $set: {
+              [`unreadMessagesCount.${message.receiverId}`]: 0,
+            },
+          },
+        );
         io.to(socketId[1]).emit("Seen_Message", seen);
       } catch (error) {
-        console.log("Seen Private Message Listener: ",error);
+        console.log("Seen Private Message Listener: ", error);
       }
   });
 

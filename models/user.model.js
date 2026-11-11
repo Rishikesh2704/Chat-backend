@@ -20,6 +20,13 @@ const userSchema = new mongoose.Schema(
       type:String,
       default:""
     },
+    encryptedKey:{
+      type:{
+        key:{type:String},
+        salt:{type:String},
+        iv:{type:String},
+      }
+    }
    
   },
   {

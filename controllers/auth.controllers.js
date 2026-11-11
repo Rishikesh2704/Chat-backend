@@ -39,6 +39,21 @@ const validateLogInUser = [
     .withMessage("Please Enter An Password")
     .isLength({ min: 8 })
     .withMessage("Incorrect Password "),
+    
+  // body("encryptedPrivateKey")
+  //   .trim()
+  //   .notEmpty()
+  //   .withMessage("EncryptedPrivateKey not provided"),
+
+  // body("salt")
+  //   .trim()
+  //   .notEmpty()
+  //   .withMessage("Salt not provided"),
+
+  // body("iv")
+  //   .trim()
+  //   .notEmpty()
+  //   .withMessage("IV not provided")
 ];
 
 export const signUpController = [
@@ -106,15 +121,30 @@ export const loginContoller = [
     }
 
     try {
-      const { email, password } = matchedData(req);
+      const { email, password} =
+        matchedData(req);
       const user = await User.findOne({ email: email });
       if (!user) {
         return res.status(404).json({ message: "User Doesn't Exist!" });
       }
+
       const comparePassword = await bcrypt.compare(password, user.password);
       if (!comparePassword) {
         return res.status(400).send("Wrong Password!");
       }
+      // const object = { key: encryptedPrivateKey, salt: salt, iv: iv };
+      // console.log("Private Key Object:", object);
+      // console.log("Key Object: ", object);
+      // const addencryptedPrivateKey = await User.findOneAndUpdate(
+      //   { email: email },
+      //   {
+      //     $set: {
+      //       encryptedKey: object,
+      //     },
+      //   },
+      //   { returnDocument: "after" },
+      // );
+      // console.log("Added encrypted privateKey: ", addencryptedPrivateKey);
       user["password"] = "";
       await createToken(user.id, res);
       const refToken = await refreshToken(user.id, res);
@@ -157,11 +187,11 @@ export const logOutController = async (req, res) => {
       { $set: { revoked: true } },
       { returnDocument: "after" },
     );
-   
+
     res.cookie("accessToken", "");
     res.cookie("refreshToken", "");
 
-    console.log("Logged Out")
+    console.log("Logged Out");
     return res.status(200).send({ message: "Logged Out Successfully!" });
   } catch (error) {
     console.log(error);
@@ -172,7 +202,9 @@ export const logOutController = async (req, res) => {
 export const refreshTokenController = async (req, res) => {
   const incomingRefreshToken = req.cookies.refreshToken;
   if (!incomingRefreshToken) {
-    res.status(401).json({ message: "Empty Refresh Token", cookies:req.cookies });
+    res
+      .status(401)
+      .json({ message: "Empty Refresh Token", cookies: req.cookies });
   }
 
   try {
@@ -183,7 +215,7 @@ export const refreshTokenController = async (req, res) => {
     if (!decodedToken) {
       throw new Error("Invalid Refresh token");
     }
-    const refreshTokenHash =  crypto
+    const refreshTokenHash = crypto
       .createHash("sha256")
       .update(incomingRefreshToken)
       .digest("hex");
@@ -204,7 +236,7 @@ export const refreshTokenController = async (req, res) => {
     }
     isRevoked.refreshTokenHash = newRefreshTokenHash;
     await isRevoked.save();
-    
+
     res.cookie("accessToken", accessToken);
     res.cookie("refreshToken", newRefreshToken);
     res.status(200).send({
