@@ -6,7 +6,7 @@ dotenv.config();
 cloudinary.config({
   cloud_name: "convo-application",
   api_key: "467121632436499",
-  api_secret: "CY728kTGd_h9iQ63ZR-0k9PIoVU", // Click 'View API Keys' above to copy your API secret
+  api_secret: "CY728kTGd_h9iQ63ZR-0k9PIoVU", 
 });
 
 

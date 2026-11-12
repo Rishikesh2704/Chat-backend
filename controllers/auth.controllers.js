@@ -284,7 +284,7 @@ export const uploadProfileController = async (req, res) => {
     res.status(201).send({ message: "Updated Profile", user });
   } catch (error) {
     console.log("Error: ", error);
-    res.status(500).send({ message: "Internal Server Error!" });
+    res.status(500).send({ message: "Internal Server Error!", error:error });
   }
 };
 
