@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import { deleteUploadedfile, uploadFile } from "../utils/cloudinary.js";
 import { sessionModel } from "../models/session.model.js";
 import crypto from "crypto";
+import { PublicKey } from "../models/publicKeys.model.js";
 
 const validateSignInUser = [
   body("email")
@@ -23,6 +24,20 @@ const validateSignInUser = [
     .withMessage("Please Enter An Password")
     .isLength({ min: 8 })
     .withMessage("Password should be atleast 8 characters long"),
+
+  body("publicKey")
+    .trim()
+    .notEmpty()
+    .withMessage("PublicKey not provided"),
+
+  body("encryptedPrivateKey")
+    .trim()
+    .notEmpty()
+    .withMessage("EncryptedPrivateKey not provided"),
+
+  body("salt").trim().notEmpty().withMessage("Salt not provided"),
+
+  body("iv").trim().notEmpty().withMessage("IV not provided"),
 ];
 
 const validateLogInUser = [
@@ -39,21 +54,6 @@ const validateLogInUser = [
     .withMessage("Please Enter An Password")
     .isLength({ min: 8 })
     .withMessage("Incorrect Password "),
-    
-  // body("encryptedPrivateKey")
-  //   .trim()
-  //   .notEmpty()
-  //   .withMessage("EncryptedPrivateKey not provided"),
-
-  // body("salt")
-  //   .trim()
-  //   .notEmpty()
-  //   .withMessage("Salt not provided"),
-
-  // body("iv")
-  //   .trim()
-  //   .notEmpty()
-  //   .withMessage("IV not provided")
 ];
 
 export const signUpController = [
@@ -65,24 +65,45 @@ export const signUpController = [
       return res.status(400).send(errors.array());
     }
     try {
-      const { email, username, password, profile } = matchedData(req);
+      const {
+        email,
+        username,
+        password,
+        profile,
+        publicKey,
+        encryptedPrivateKey,
+        salt:privateKeySalt,
+        iv,
+      } = matchedData(req);
       const existingUser = await User.findOne({ email: email });
       if (existingUser) {
         return res.status(400).json({ message: "User Already Exists!" });
       }
-
+      
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(password, salt);
-
+      const privateKeyObject = {
+        key:encryptedPrivateKey,
+        salt:privateKeySalt,
+        iv:iv
+      }
       const NewUser = new User({
         email,
         username,
         password: hashedPassword,
         profile,
+        encryptedKey:privateKeyObject
       });
 
       await NewUser.save();
       NewUser["password"] = "";
+      const addPublic = new PublicKey(
+        {
+          user:NewUser.id,
+          publicKey:publicKey,
+        }
+      )
+      await addPublic.save();
       const token = await createToken(NewUser.id, res);
       const refToken = await refreshToken(NewUser.id, res);
 
@@ -121,8 +142,7 @@ export const loginContoller = [
     }
 
     try {
-      const { email, password} =
-        matchedData(req);
+      const { email, password } = matchedData(req);
       const user = await User.findOne({ email: email });
       if (!user) {
         return res.status(404).json({ message: "User Doesn't Exist!" });
@@ -132,19 +152,7 @@ export const loginContoller = [
       if (!comparePassword) {
         return res.status(400).send("Wrong Password!");
       }
-      // const object = { key: encryptedPrivateKey, salt: salt, iv: iv };
-      // console.log("Private Key Object:", object);
-      // console.log("Key Object: ", object);
-      // const addencryptedPrivateKey = await User.findOneAndUpdate(
-      //   { email: email },
-      //   {
-      //     $set: {
-      //       encryptedKey: object,
-      //     },
-      //   },
-      //   { returnDocument: "after" },
-      // );
-      // console.log("Added encrypted privateKey: ", addencryptedPrivateKey);
+      
       user["password"] = "";
       await createToken(user.id, res);
       const refToken = await refreshToken(user.id, res);
