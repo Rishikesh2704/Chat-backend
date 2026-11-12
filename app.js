@@ -22,8 +22,12 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",")
   : [];
 const corsOptions = {
-  // origin: "https://convocon.vercel.app",
-  origin:allowedOrigins,
+  // origin: [
+  //   "https://convocon.vercel.app",
+  //   "http://localhost:5173",
+  //   "http://localhost:4175",
+  // ],
+  origin: "https://convocon.vercel.app",
   methods: ["GET", "POST", "DELETE", "PUT"],
   credentials: true,
 };
