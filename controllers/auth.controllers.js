@@ -272,16 +272,13 @@ export const uploadProfileController = async (req, res) => {
       const publicId = image[length - 1].split(".")[0];
       const deletedFile = await deleteUploadedfile(publicId);
     }
-    console.log("Old Profile:", oldProfile);
-    console.log("File:", req.file);
-    const { secure_url: profileUrl } = await uploadFile(req.file.path);
+    const {secure_url:profileUrl} = await uploadFile(req.file.buffer);
     const user = await User.findOneAndUpdate(
       { _id: userId },
       { $set: { profile: profileUrl } },
       { returnDocument: "after" },
     );
-    console.log("Updated Profile: ", user);
-    res.status(201).send({ message: "Updated Profile", user });
+    res.status(201).send({ message: "Updated Profile", user:user });
   } catch (error) {
     console.log("Error: ", error);
     res.status(500).send({ message: "Internal Server Error!", error:error });
