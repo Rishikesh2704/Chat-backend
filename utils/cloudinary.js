@@ -1,7 +1,5 @@
 import { v2 as cloudinary } from "cloudinary";
-import dotenv from "dotenv";
-import fs from "fs";
-dotenv.config();
+import dotenv from "dotenv/config.js";
 
 cloudinary.config({
   cloud_name: "convo-application",

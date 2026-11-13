@@ -1,5 +1,5 @@
 import cookies from "cookie-parser";
-import dotenv from "dotenv";
+import dotenv from "dotenv/config";
 import cors from "cors";
 import express from "express";
 
@@ -14,24 +14,21 @@ import { searchUserController } from "./controllers/auth.controllers.js";
 import { verifyToken } from "./middlewares/verifyToken.js";
 import { Conversations } from "./models/conversation.model.js";
 import { PublicKey } from "./models/publicKeys.model.js";
+// import { corsOptions } from "./utils/corsOptions.js";
 
-dotenv.config();
 const PORT = 3000;
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",")
+  ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim())
   : [];
+  
 const corsOptions = {
   origin: allowedOrigins,
   // origin: "https://convocon.vercel.app",
   methods: ["GET", "POST", "DELETE", "PUT"],
   credentials: true,
 };
-app.use((req, res, next) => {
-  console.log("Incoming Origin:", req.headers.origin);
-  console.log("Allowed Origin:", process.env.allowedOrigins);
-  next();
-});
+
 
 app.use(cors(corsOptions));
 app.use(express.json({ extended: false }));
