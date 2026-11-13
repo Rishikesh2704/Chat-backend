@@ -82,7 +82,7 @@ export const sendMessagesController = async (req, res) => {
     const { message, key, iv, receiverSocketId, conversationId = null } = req.body;
     let imageUrl;
     if (req.file) {
-      const response = await uploadFile(req.file?.path);
+      const response = await uploadFile(req.file?.buffer);
       imageUrl = response.secure_url;
     }
     const messageType = imageUrl !== undefined ? "image" : "text";

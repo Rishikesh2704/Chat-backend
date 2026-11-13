@@ -287,6 +287,7 @@ export const uploadProfileController = async (req, res) => {
 
 export const searchUserController = async (req, res) => {
   try {
+    const requestedUser = req.user
     const { u, page } = req.query;
     const LIMIT = 10;
     const SKIP = LIMIT * page;
@@ -298,10 +299,12 @@ export const searchUserController = async (req, res) => {
 
     const searchResponse = await User.find({
       username: { $regex: u, $options: "i" },
+      _id:{$ne:requestedUser._id}
     });
     // .sort({ createdAt: -1 })
     // .limit(LIMIT)
     // .skip(SKIP);
+    
     res.status(200).json({
       users: searchResponse,
     });
