@@ -10,7 +10,6 @@ const allowedOrigins = process.env.ALLOWED_ORIGINS
   : [];
 
 const io = new Server(server, {
-  // cors:{origin:"https://convocon.vercel.app",methods:['GET','POST',]}
   cors: {
     origin: allowedOrigins,
     methods: ["GET", "POST", "DELETE", "PUT"],

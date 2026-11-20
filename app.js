@@ -21,14 +21,12 @@ const PORT = 3000;
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim())
   : [];
-  
+
 const corsOptions = {
   origin: allowedOrigins,
-  // origin: "https://convocon.vercel.app",
   methods: ["GET", "POST", "DELETE", "PUT"],
   credentials: true,
 };
-
 
 app.use(cors(corsOptions));
 app.use(express.json({ extended: false }));
@@ -79,13 +77,43 @@ app.post("/users/publicKey", verifyToken, async (req, res) => {
 });
 
 let users = {};
-
 io.on("connection", (socket) => {
   users[socket.handshake.query.userId] = socket.id;
-  // io.emit("Online_Users", users);
   socket.on("connected", () => {
     io.emit("Online_Users", users);
   });
+
+  socket.on("VideoCall_Request", ({ to, roomId, user }) => {
+    io.to(to).emit('VideoCall_Request', {from:socket.id, roomId, user})
+  });
+  socket.on("CallRequest_Rejected", ({ to, user }) => {
+    io.to(to).emit('CallRequest_Rejected', {from:socket.id,  user})
+  });
+
+  socket.on("join_videoRoom", ({ roomId, username }) => {
+    socket.join(roomId);
+    socket.to(roomId).emit("user_joined", { socketId: socket.id, username });
+  });
+
+  socket.on("offer", (data) => {
+    const { to, sdp } = data;
+    io.to(to).emit("offer", { from: socket.id, sdp });
+  });
+
+  socket.on("answer", (data) => {
+    const { to, sdp } = data;
+    io.to(to).emit("answer", { from: socket.id, sdp });
+  });
+
+  socket.on("iceCandidate", (data) => {
+    const { to, candidate } = data;
+    io.to(to).emit("iceCandidate", { from: socket.id, candidate });
+  });
+
+  socket.on('end_videoCall', ({roomId}) => {
+    
+    socket.to(roomId).emit('end_videoCall', 'end call')
+  })
 
   socket.on("Typing", (mess) => {
     if (mess.roomId) {
