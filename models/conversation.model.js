@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
-import { User } from "./user.model.js";
-import { messageModel } from "./messages.model.js";
+
 
 const conversationSchema = new mongoose.Schema(
   {
@@ -22,6 +21,10 @@ const conversationSchema = new mongoose.Schema(
       of:Number,
       default:{},
     },
+    callRoomId:{
+      type:String, 
+      default:null
+    }, 
     lastMessage: {
       type: {
         message: String,

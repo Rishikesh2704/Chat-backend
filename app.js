@@ -14,6 +14,8 @@ import { searchUserController } from "./controllers/auth.controllers.js";
 import { verifyToken } from "./middlewares/verifyToken.js";
 import { Conversations } from "./models/conversation.model.js";
 import { PublicKey } from "./models/publicKeys.model.js";
+import { Call } from "./models/call.model.js";
+import { callRouter } from "./routers/call.js";
 // import { corsOptions } from "./utils/corsOptions.js";
 
 const PORT = 3000;
@@ -40,6 +42,7 @@ app.get("/search", verifyToken, searchUserController);
 
 app.use("/auth", authRouter);
 app.use("/messages", messagesRouter);
+app.use("/call", callRouter);
 app.use("/group", groupRouter);
 
 app.get("/users/publicKey/:userId", verifyToken, async (req, res) => {
@@ -83,16 +86,45 @@ io.on("connection", (socket) => {
     io.emit("Online_Users", users);
   });
 
-  socket.on("VideoCall_Request", ({ to, roomId, user }) => {
-    io.to(to).emit('VideoCall_Request', {from:socket.id, roomId, user})
-  });
-  socket.on("CallRequest_Rejected", ({ to, user }) => {
-    io.to(to).emit('CallRequest_Rejected', {from:socket.id,  user})
+  socket.on("join_callRoom", async ({ roomId, username, callId }) => {
+    socket.join(roomId);
+    await Call.findOneAndUpdate(
+      {
+        _id: callId,
+      },
+      {
+        $set: {
+          isAnswered:true
+        },
+      },
+    );
+    socket
+      .to(roomId)
+      .emit("user_joined", { socketId: socket.id, username, callId });
   });
 
-  socket.on("join_videoRoom", ({ roomId, username }) => {
-    socket.join(roomId);
-    socket.to(roomId).emit("user_joined", { socketId: socket.id, username });
+  socket.on("Call_Request", ({ to, roomId, user, callId }) => {
+    io.to(to).emit("Call_Request", {
+      from: socket.id,
+      roomId,
+      user,
+      callId,
+    });
+  });
+
+  socket.on("CallRequest_Rejected", async ({ to, user, callId }) => {
+   await Call.findOneAndUpdate(
+      {
+        _id: callId,
+      },
+      {
+        $set: {
+          isActive: false,
+          isAnswered:false
+        },
+      },
+    );
+    io.to(to).emit("CallRequest_Rejected", { from: socket.id, user });
   });
 
   socket.on("offer", (data) => {
@@ -110,10 +142,19 @@ io.on("connection", (socket) => {
     io.to(to).emit("iceCandidate", { from: socket.id, candidate });
   });
 
-  socket.on('end_videoCall', ({roomId}) => {
-    
-    socket.to(roomId).emit('end_videoCall', 'end call')
-  })
+  socket.on("end_Call", async ({ roomId, callId }) => {
+    const callLog = await Call.findOneAndUpdate(
+      {
+        _id: callId,
+      },
+      {
+        $set: {
+          isActive: false,
+        },
+      },
+    );
+    socket.to(roomId).emit("end_Call", "end call");
+  });
 
   socket.on("Typing", (mess) => {
     if (mess.roomId) {

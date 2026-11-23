@@ -29,7 +29,7 @@ export const getUsersController = async (req, res) => {
     const conversations = await Conversations.find({
       participants: id,
     }).populate([
-      { path: "participants", select: "username profile" },
+      { path: "participants", select: "username profile email createdAt " },
       { path: "group", select: "groupName profile roomId admins members" },
     ]);
 
