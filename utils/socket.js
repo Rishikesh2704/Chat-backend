@@ -14,6 +14,10 @@ const io = new Server(server, {
     origin: allowedOrigins,
     methods: ["GET", "POST", "DELETE", "PUT"],
   },
+  connectionStateRecovery: {
+    maxDisconnectionDuration: 2 * 60 * 1000,
+    skipMiddlewares: false,
+  },
 });
 
 export { io, app, server };
