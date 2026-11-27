@@ -25,10 +25,10 @@ const callSchema = new mongoose.Schema(
       type:Boolean,
       default:false,
     },
-    isAnswered: {
-      type: Boolean,
-      default: false,
-    },
+    callState:{
+      type:String,
+      enum:['declined', 'answered', 'missed']
+    }
   },
   {
     timestamps: true,

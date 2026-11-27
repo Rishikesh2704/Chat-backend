@@ -1,19 +1,15 @@
 import multer from "multer";
+import path from 'path'
+export const upload = multer({
+  limits: { fileSize: 1000000 },
+  fileFilter: (req, file, cb) => checkFileType(file, cb),
+});
 
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     cb(null, "./uploads/images");
-//   },
-//   filename: (req, file, cb) => {
-//     cb(null, file.originalname + "-" + Date.now());
-//   },
-// });
-
-export const upload = multer({ 
-  fileFilter:(req,file,cb) => {
-   if(['image/png','image/jpeg'].includes(file.mimetype)){
-    cb(null, true)
-   }
-   else cb(null, false)
-}}
-);
+function checkFileType(file, cb) {
+  const fileTypes = /jpeg|jpg|png|gif/;
+  const extName = fileTypes.test(path.extname(file.originalname).toLowerCase());
+  const mimeType = fileTypes.test(file.mimeType);
+  if ((extName, mimeType)) {
+    return cb(null, true);
+  } else return cb("Error: Images only of type jpeg, png, gif, jpg");
+}

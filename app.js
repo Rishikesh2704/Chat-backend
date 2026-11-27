@@ -94,7 +94,7 @@ io.on("connection", (socket) => {
       },
       {
         $set: {
-          isAnswered:true
+          callState:'answered'
         },
       },
     );
@@ -120,7 +120,7 @@ io.on("connection", (socket) => {
       {
         $set: {
           isActive: false,
-          isAnswered:false
+          callState:'declined'
         },
       },
     );
@@ -143,6 +143,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("end_Call", async ({ roomId, callId }) => {
+    console.log("Call id", callId)
     const callLog = await Call.findOneAndUpdate(
       {
         _id: callId,

@@ -145,12 +145,12 @@ export const loginContoller = [
       const { email, password } = matchedData(req);
       const user = await User.findOne({ email: email });
       if (!user) {
-        return res.status(404).json({ message: "User Doesn't Exist!" });
+        return res.status(404).json({ message: "user doesn't exist" });
       }
 
       const comparePassword = await bcrypt.compare(password, user.password);
       if (!comparePassword) {
-        return res.status(400).send("Wrong Password!");
+        return res.status(400).send({message:"wrong password"});
       }
       
       user["password"] = "";
